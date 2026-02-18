@@ -21,7 +21,7 @@
         <table name="cron_history">
             <field type="INT NOT NULL AUTO_INCREMENT PRIMARY KEY">id</field>
             <field type="INT(3) NOT NULL">cronid</field>
-            <field type="VARCHAR(50) NOT NULL">uid</field>
+            <field type="VARCHAR(50) NOT NULL">uid</field> <!-- Column definition must be changed in \QUI\Cron\EventHandler::checkCronTable() -->
             <field type="DATETIME NOT NULL">lastexec</field>
             <field type="DATETIME NULL DEFAULT NULl">finish</field>
 
