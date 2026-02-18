@@ -55,12 +55,17 @@ class EventHandler
     {
         $categoryColumn = QUI::getDataBase()->table()->getColumn('cron', 'title');
 
-        if ($categoryColumn['Type'] === 'varchar(1000)') {
-            return;
+        if ($categoryColumn['Type'] !== 'varchar(1000)') {
+            $Statement = QUI::getDataBase()->getPDO()->prepare("ALTER TABLE cron MODIFY `title` VARCHAR(1000)");
+            $Statement->execute();
         }
 
-        $Statement = QUI::getDataBase()->getPDO()->prepare("ALTER TABLE cron MODIFY `title` VARCHAR(1000)");
-        $Statement->execute();
+        $cronHistoryUidColumn = QUI::getDataBase()->table()->getColumn('cron_history', 'uid');
+
+        if ($cronHistoryUidColumn['Type'] !== 'varchar(50)') {
+            $Statement = QUI::getDataBase()->getPDO()->prepare("ALTER TABLE cron_history MODIFY `uid` VARCHAR(50)");
+            $Statement->execute();
+        }
     }
 
     /**
