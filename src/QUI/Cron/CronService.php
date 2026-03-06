@@ -7,11 +7,10 @@ use QUI\System\Log;
 
 class CronService
 {
-    const CRON_SERVICE_URL = "https://cron.quiqqer.com";
-
     private string $domain;
     private bool $https;
     private string $packageDir;
+    private string $baseUrl;
 
     /**
      * CronService constructor.
@@ -49,9 +48,12 @@ class CronService
             }
         }
 
-
         // Parse Package dir
         $this->packageDir = $url_dir . str_replace($cms_dir, "", $opt_dir);
+
+        $config = QUI::getPackage('quiqqer/cron')->getConfig();
+        $baseUrl = $config->get('cronservice', 'base_url');
+        $this->baseUrl = !empty($baseUrl) ? rtrim($baseUrl, '/') : 'https://cron.quiqqer.com';
     }
 
     /**
@@ -209,7 +211,7 @@ class CronService
         }
 
 
-        $url = self::CRON_SERVICE_URL . "/admin/ajax.php?" .
+        $url = $this->baseUrl . "/admin/ajax.php?" .
             "_rf=" . urlencode("[\"package_pcsg_cronservice_ajax_register\"]") .
             "&package=" . urlencode("pcsg/cronservice") .
             "&lang=" . QUI::getUserBySession()->getLang() .
@@ -280,7 +282,7 @@ class CronService
      */
     private function makeServerAjaxCall($function, $params): mixed
     {
-        $url = self::CRON_SERVICE_URL . "/admin/ajax.php?" .
+        $url = $this->baseUrl . "/admin/ajax.php?" .
             "_rf=" . urlencode('["' . $function . '"]') .
             "&package=" . urlencode("pcsg/cronservice") .
             "&lang=" . QUI::getUserBySession()->getLang();
