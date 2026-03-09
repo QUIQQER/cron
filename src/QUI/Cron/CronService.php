@@ -220,7 +220,7 @@ class CronService
 
         $curl = curl_init();
         curl_setopt_array($curl, [
-            CURLOPT_RETURNTRANSFER => 1,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_URL => $url,
             CURLOPT_USERAGENT => 'QUIQQER'
         ]);
@@ -288,7 +288,7 @@ class CronService
 
         $curl = curl_init();
         curl_setopt_array($curl, [
-            CURLOPT_RETURNTRANSFER => 1,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_URL => $url,
             CURLOPT_USERAGENT => 'QUIQQER'
         ]);
