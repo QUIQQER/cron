@@ -36,7 +36,7 @@ define('package/quiqqer/cron/bin/CronServiceWindow', [
             title: QUILocale.get(lg, 'cron.window.cronservice.title'),
             icon: 'fa fa-cloud',
             maxWidth: 400,
-            maxHeight: 625,
+            maxHeight: 650,
             autoclose: false,
             buttons: false
         },
@@ -162,7 +162,7 @@ define('package/quiqqer/cron/bin/CronServiceWindow', [
                                 Button.setAttribute('text', QUILocale.get('quiqqer/cron', 'cron.window.cronservice.content.btn.unregister.confirm'));
 
                                 if (Button.getAttribute('clickcnt') === 1) {
-                                    self.cancelRegistration().then(function () {
+                                    self.unregister().then(function () {
                                         self.refresh();
                                     });
                                 }
@@ -230,6 +230,7 @@ define('package/quiqqer/cron/bin/CronServiceWindow', [
                 buttons: false,
                 events: {
                     onOpen: function (Sheet) {
+                        let ErrorContainer;
                         const Content = Sheet.getContent();
 
                         Content.set('html', Mustache.render(registrationTemplate, {
@@ -239,18 +240,37 @@ define('package/quiqqer/cron/bin/CronServiceWindow', [
                             cron_window_cronservice_content_btn_register: QUILocale.get(lg, 'cron.window.cronservice.registration.title')
                         }));
 
-                        const Email = Content.getElement('.quiqqer-cron-cronservicewindow-registration-txt-email');
-
-                        Content.getElement('.quiqqer-cron-cronservicewindow-btn-register').addEvent('click', function () {
+                        const register = () => {
                             self.Loader.show();
                             self.register(Email.value).then(function () {
                                 self.Loader.hide();
                                 self.showRegistrationSuccess();
                                 Sheet.destroy();
+                            }).catch(function (e) {
+                                if (ErrorContainer) {
+                                    ErrorContainer.destroy();
+                                }
 
-                            }).catch(function () {
+                                ErrorContainer = new Element('div', {
+                                    'class': 'quiqqer-cron-cronservicewindow-registration-error'
+                                }).inject(Content, 'top');
+
+                                ErrorContainer.set('html', e.getMessage ? e.getMessage() : e);
                                 self.Loader.hide();
                             });
+                        };
+
+                        const Form  = Content.getElement('form');
+                        Form.addEventListener('submit', (event) => {
+                            event.preventDefault();
+                            register();
+                        });
+
+                        const Email = Content.getElement('.quiqqer-cron-cronservicewindow-registration-txt-email');
+                        Email.focus();
+
+                        Content.getElement('.quiqqer-cron-cronservicewindow-btn-register').addEvent('click', function () {
+                            register();
                         });
                     },
 
@@ -310,7 +330,8 @@ define('package/quiqqer/cron/bin/CronServiceWindow', [
                 QUIAjax.post('package_quiqqer_cron_ajax_cronservice_sendRegistration', resolve, {
                     'package': lg,
                     'email': email,
-                    onError: reject
+                    onError: reject,
+                    showError: false
                 });
             });
         },
@@ -323,19 +344,6 @@ define('package/quiqqer/cron/bin/CronServiceWindow', [
         unregister: function () {
             return new Promise(function (resolve, reject) {
                 QUIAjax.get('package_quiqqer_cron_ajax_cronservice_revokeRegistration', resolve, {
-                    'package': lg,
-                    onError: reject
-                });
-            });
-        },
-
-        /**
-         * Cancels the registration
-         * @returns {*}
-         */
-        cancelRegistration: function () {
-            return new Promise(function (resolve, reject) {
-                QUIAjax.get('package_quiqqer_cron_ajax_cronservice_cancelRegistration', resolve, {
                     'package': lg,
                     onError: reject
                 });
