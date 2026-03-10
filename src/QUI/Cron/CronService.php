@@ -7,11 +7,10 @@ use QUI\System\Log;
 
 class CronService
 {
-    const CRON_SERVICE_URL = "https://cron.quiqqer.com";
-
     private string $domain;
     private bool $https;
     private string $packageDir;
+    private string $baseUrl;
 
     /**
      * CronService constructor.
@@ -49,9 +48,12 @@ class CronService
             }
         }
 
-
         // Parse Package dir
         $this->packageDir = $url_dir . str_replace($cms_dir, "", $opt_dir);
+
+        $config = QUI::getPackage('quiqqer/cron')->getConfig();
+        $baseUrl = $config->get('cronservice', 'base_url');
+        $this->baseUrl = !empty($baseUrl) ? rtrim($baseUrl, '/') : 'https://cron.quiqqer.com';
     }
 
     /**
@@ -165,8 +167,6 @@ class CronService
      */
     public function cancelRegistration(): void
     {
-        Log::addDebug("");
-
         if (empty($this->domain)) {
             throw new Exception("Could not get the instances domain.");
         }
@@ -197,19 +197,18 @@ class CronService
     private function sendRegistrationRequest($domain, $email, $packageDir, $https): void
     {
         if (empty($domain)) {
-            throw new Exception(["quiqqer/cron", "exception.registration.empty.domain"]);
+            throw new CronServiceException(["quiqqer/cron", "exception.registration.empty.domain"]);
         }
 
         if (empty($email)) {
-            throw new Exception(["quiqqer/cron", "exception.registration.empty.email"]);
+            throw new CronServiceException(["quiqqer/cron", "exception.registration.empty.email"]);
         }
 
         if (empty($packageDir)) {
-            throw new Exception(["quiqqer/cron", "exception.registration.empty.packageDir"]);
+            throw new CronServiceException(["quiqqer/cron", "exception.registration.empty.packageDir"]);
         }
 
-
-        $url = self::CRON_SERVICE_URL . "/admin/ajax.php?" .
+        $url = $this->baseUrl . "/admin/ajax.php?" .
             "_rf=" . urlencode("[\"package_pcsg_cronservice_ajax_register\"]") .
             "&package=" . urlencode("pcsg/cronservice") .
             "&lang=" . QUI::getUserBySession()->getLang() .
@@ -219,10 +218,9 @@ class CronService
             "&https=" . ($https ? "1" : "0") .
             "&user=" . QUI::getUserBySession()->getName();
 
-
         $curl = curl_init();
         curl_setopt_array($curl, [
-            CURLOPT_RETURNTRANSFER => 1,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_URL => $url,
             CURLOPT_USERAGENT => 'QUIQQER'
         ]);
@@ -258,7 +256,6 @@ class CronService
             throw new Exception("Something went wrong!");
         }
 
-
         $revokeCode = $data['revokeCode'];
         $this->saveRevokeToken($revokeCode);
 
@@ -280,7 +277,7 @@ class CronService
      */
     private function makeServerAjaxCall($function, $params): mixed
     {
-        $url = self::CRON_SERVICE_URL . "/admin/ajax.php?" .
+        $url = $this->baseUrl . "/admin/ajax.php?" .
             "_rf=" . urlencode('["' . $function . '"]') .
             "&package=" . urlencode("pcsg/cronservice") .
             "&lang=" . QUI::getUserBySession()->getLang();
@@ -291,7 +288,7 @@ class CronService
 
         $curl = curl_init();
         curl_setopt_array($curl, [
-            CURLOPT_RETURNTRANSFER => 1,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_URL => $url,
             CURLOPT_USERAGENT => 'QUIQQER'
         ]);

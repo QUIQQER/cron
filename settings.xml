@@ -37,6 +37,13 @@
                     <defaultvalue>1</defaultvalue>
                 </conf>
             </section>
+
+            <section name="cronservice">
+                <conf name="base_url">
+                    <type><![CDATA[string]]></type>
+                    <defaultvalue><![CDATA[https://cron.quiqqer.com]]></defaultvalue>
+                </conf>
+            </section>
         </config>
 
         <window>
