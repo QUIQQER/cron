@@ -167,8 +167,6 @@ class CronService
      */
     public function cancelRegistration(): void
     {
-        Log::addDebug("");
-
         if (empty($this->domain)) {
             throw new Exception("Could not get the instances domain.");
         }
@@ -199,17 +197,16 @@ class CronService
     private function sendRegistrationRequest($domain, $email, $packageDir, $https): void
     {
         if (empty($domain)) {
-            throw new Exception(["quiqqer/cron", "exception.registration.empty.domain"]);
+            throw new CronServiceException(["quiqqer/cron", "exception.registration.empty.domain"]);
         }
 
         if (empty($email)) {
-            throw new Exception(["quiqqer/cron", "exception.registration.empty.email"]);
+            throw new CronServiceException(["quiqqer/cron", "exception.registration.empty.email"]);
         }
 
         if (empty($packageDir)) {
-            throw new Exception(["quiqqer/cron", "exception.registration.empty.packageDir"]);
+            throw new CronServiceException(["quiqqer/cron", "exception.registration.empty.packageDir"]);
         }
-
 
         $url = $this->baseUrl . "/admin/ajax.php?" .
             "_rf=" . urlencode("[\"package_pcsg_cronservice_ajax_register\"]") .
@@ -221,10 +218,9 @@ class CronService
             "&https=" . ($https ? "1" : "0") .
             "&user=" . QUI::getUserBySession()->getName();
 
-
         $curl = curl_init();
         curl_setopt_array($curl, [
-            CURLOPT_RETURNTRANSFER => 1,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_URL => $url,
             CURLOPT_USERAGENT => 'QUIQQER'
         ]);
@@ -260,7 +256,6 @@ class CronService
             throw new Exception("Something went wrong!");
         }
 
-
         $revokeCode = $data['revokeCode'];
         $this->saveRevokeToken($revokeCode);
 
@@ -293,7 +288,7 @@ class CronService
 
         $curl = curl_init();
         curl_setopt_array($curl, [
-            CURLOPT_RETURNTRANSFER => 1,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_URL => $url,
             CURLOPT_USERAGENT => 'QUIQQER'
         ]);

@@ -121,10 +121,6 @@ class Manager
 
         $cronData = $this->getCronData($cron);
 
-        if (!is_array($params)) {
-            $params = [];
-        }
-
         if (!empty($params['exec'])) {
             $cronData['exec'] = $params['exec'];
             unset($params['exec']);
@@ -438,10 +434,6 @@ class Manager
                 foreach ($cronDataParams as $entry) {
                     $params[$entry['name']] = $entry['value'];
                 }
-            }
-
-            if (!is_array($params)) {
-                $params = [];
             }
         }
 
