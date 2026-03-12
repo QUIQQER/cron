@@ -8,9 +8,73 @@ use RuntimeException;
 
 class ExecCronsTest extends TestCase
 {
+    private function createTool(): ExecCrons
+    {
+        return new class () extends ExecCrons {
+            public int $unlockCalls = 0;
+            public int $runCalls = 0;
+            public int $listCalls = 0;
+            public int $listAllCalls = 0;
+            public bool $throwOnRead = false;
+            public bool $stopAfterUnlock = false;
+
+            /** @var array<int, string> */
+            public array $inputs = [];
+
+            /** @var array<int, string> */
+            public array $output = [];
+
+            public function run(): void
+            {
+                $this->runCalls++;
+            }
+
+            public function listCrons(): void
+            {
+                $this->listCalls++;
+            }
+
+            public function listAllCrons(): void
+            {
+                $this->listAllCalls++;
+            }
+
+            public function unlock(): void
+            {
+                $this->unlockCalls++;
+
+                if ($this->stopAfterUnlock) {
+                    throw new RuntimeException('stop-unlock');
+                }
+            }
+
+            public function writeLn(string $msg = '', bool|string $color = false, bool|string $bg = false): void
+            {
+                $this->output[] = $msg;
+            }
+
+            public function readInput(): string
+            {
+                if ($this->throwOnRead) {
+                    throw new RuntimeException('stop-read');
+                }
+
+                if (!count($this->inputs)) {
+                    throw new RuntimeException('missing-input');
+                }
+
+                return array_shift($this->inputs);
+            }
+
+            public function resetColor(): void
+            {
+            }
+        };
+    }
+
     public function testExecuteWithUnlockArgumentCallsUnlock(): void
     {
-        $Tool = new ExecCronsDouble();
+        $Tool = $this->createTool();
         $Tool->setArgument('--unlock', true);
 
         $Tool->execute();
@@ -23,7 +87,7 @@ class ExecCronsTest extends TestCase
 
     public function testCommandReadListsUnlockCommand(): void
     {
-        $Tool = new ExecCronsDouble();
+        $Tool = $this->createTool();
         $Tool->throwOnRead = true;
 
         try {
@@ -45,7 +109,7 @@ class ExecCronsTest extends TestCase
 
     public function testCommandReadUnlockDispatchesUnlock(): void
     {
-        $Tool = new ExecCronsDouble();
+        $Tool = $this->createTool();
         $Tool->inputs = ['unlock'];
         $Tool->stopAfterUnlock = true;
 
@@ -60,67 +124,5 @@ class ExecCronsTest extends TestCase
         }
 
         $this->assertSame(1, $Tool->unlockCalls);
-    }
-}
-
-class ExecCronsDouble extends ExecCrons
-{
-    public int $unlockCalls = 0;
-    public int $runCalls = 0;
-    public int $listCalls = 0;
-    public int $listAllCalls = 0;
-    public bool $throwOnRead = false;
-    public bool $stopAfterUnlock = false;
-
-    /** @var array<int, string> */
-    public array $inputs = [];
-
-    /** @var array<int, string> */
-    public array $output = [];
-
-    public function run(): void
-    {
-        $this->runCalls++;
-    }
-
-    public function listCrons(): void
-    {
-        $this->listCalls++;
-    }
-
-    public function listAllCrons(): void
-    {
-        $this->listAllCalls++;
-    }
-
-    public function unlock(): void
-    {
-        $this->unlockCalls++;
-
-        if ($this->stopAfterUnlock) {
-            throw new RuntimeException('stop-unlock');
-        }
-    }
-
-    public function writeLn(string $msg = '', bool|string $color = false, bool|string $bg = false): void
-    {
-        $this->output[] = $msg;
-    }
-
-    public function readInput(): string
-    {
-        if ($this->throwOnRead) {
-            throw new RuntimeException('stop-read');
-        }
-
-        if (!count($this->inputs)) {
-            throw new RuntimeException('missing-input');
-        }
-
-        return array_shift($this->inputs);
-    }
-
-    public function resetColor(): void
-    {
     }
 }
