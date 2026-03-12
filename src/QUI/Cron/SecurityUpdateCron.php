@@ -12,9 +12,10 @@ use QUI\Exception;
 class SecurityUpdateCron
 {
     /**
+     * @param array<string, mixed> $params
      * @throws Exception
      */
-    public static function execute(array $params, $CronManager): void
+    public static function execute(array $params, Manager $CronManager): void
     {
         $Console = new QUI\System\Console\Tools\SecurityUpdate();
 

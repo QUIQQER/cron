@@ -14,10 +14,16 @@ QUI::getAjax()->registerFunction(
             return;
         }
 
+        $Config = QUI::getPackage('quiqqer/cron')->getConfig();
+
+        if (!$Config) {
+            return;
+        }
+
         // not execute at the first log in
-        if (QUI::getPackage('quiqqer/cron')->getConfig()->get('update', 'logged_in_before') === false) {
-            QUI::getPackage('quiqqer/cron')->getConfig()->set('update', 'logged_in_before', 1);
-            QUI::getPackage('quiqqer/cron')->getConfig()->save();
+        if ($Config->get('update', 'logged_in_before') === false) {
+            $Config->set('update', 'logged_in_before', 1);
+            $Config->save();
             return;
         }
 

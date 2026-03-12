@@ -237,6 +237,12 @@ class ExecCrons extends QUI\System\Console\Tool
      */
     public function runCron(bool | int $cronId = false): void
     {
+        if (!is_numeric($cronId)) {
+            throw new QUI\Exception('Cron ID must be an integer');
+        }
+
+        $cronId = (int)$cronId;
+
         $Manager = new QUI\Cron\Manager();
         $cron = $Manager->getCronById($cronId);
 
