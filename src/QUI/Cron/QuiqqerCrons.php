@@ -24,8 +24,6 @@ use function unlink;
 /**
  * Cron Manager
  * - offers the default crons
- *
- * @author www.pcsg.de (Henning Leutz)
  */
 class QuiqqerCrons
 {

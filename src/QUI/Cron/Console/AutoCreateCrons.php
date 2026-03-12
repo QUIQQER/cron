@@ -6,8 +6,6 @@ use QUI;
 
 /**
  * Cron Console Manager
- *
- * @author www.pcsg.de (Henning Leutz)
  */
 class AutoCreateCrons extends QUI\System\Console\Tool
 {

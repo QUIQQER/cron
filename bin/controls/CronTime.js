@@ -1,11 +1,5 @@
 /**
  * Control for setting up cron timetables in a user-friendly fashion
- *
- * @module package/quiqqer/cron/bin/controls/CronTime
- * @author www.pcsg.de (Patrick Müller)
- *
- * @require qui/controls/Control
- * @require Ajax
  */
 define('package/quiqqer/cron/bin/controls/CronTime', [
 

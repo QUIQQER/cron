@@ -16,8 +16,6 @@ use function str_replace;
 
 /**
  * Cron Main Events
- *
- * @author www.pcsg.de (Henning Leutz)
  */
 class EventHandler
 {

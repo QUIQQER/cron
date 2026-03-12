@@ -9,9 +9,6 @@ namespace QUI\Cron;
 use QUI;
 use QUI\Exception;
 
-/**
- * @author www.pcsg.de (Henning Leutz)
- */
 class SecurityUpdateCron
 {
     /**

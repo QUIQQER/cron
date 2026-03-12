@@ -34,8 +34,6 @@ use function trim;
 /**
  * Cron Manager
  *
- * @author www.pcsg.de (Henning Leutz)
- *
  * @error  1001 - Cannot add Cron. Cron not exists
  * @error  1002 - Cannot edit Cron. Cron command not exists
  */
