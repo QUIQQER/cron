@@ -43,6 +43,7 @@ class Manager
 {
     const AUTOCREATE_SCOPE_PROJECTS = 'projects';
     const AUTOCREATE_SCOPE_LANGUAGES = 'languages';
+    const EXECUTION_LOCK_KEY = 'cron-execution';
 
     /**
      * Flag that indicates if a cron.log is written
@@ -281,7 +282,7 @@ class Manager
         Manager::log('Start cron execution (all crons)');
 
         // locking
-        $lockKey = 'cron-execution';
+        $lockKey = self::EXECUTION_LOCK_KEY;
 
         $Package = null;
         $Start = date_create();
@@ -403,11 +404,23 @@ class Manager
 
         if ($force === false) {
             try {
-                QUI\Lock\Locker::unlock($Package, $lockKey);
+                self::unlockExecutionLock();
             } catch (\Exception $Exception) {
                 Log::writeDebugException($Exception);
             }
         }
+    }
+
+    /**
+     * Remove the cron execution lock.
+     *
+     * @throws \Exception
+     */
+    public static function unlockExecutionLock(): void
+    {
+        $Package = QUI::getPackage('quiqqer/cron');
+
+        QUI\Lock\Locker::unlock($Package, self::EXECUTION_LOCK_KEY);
     }
 
     /**

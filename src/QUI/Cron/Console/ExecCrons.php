@@ -31,6 +31,7 @@ class ExecCrons extends QUI\System\Console\Tool
         $list = $this->getArgument('--list');
         $listall = $this->getArgument('--list-all');
         $runCron = $this->getArgument('--cron');
+        $unlock = $this->getArgument('--unlock');
 
         if ($run) {
             $this->run();
@@ -52,6 +53,11 @@ class ExecCrons extends QUI\System\Console\Tool
             return;
         }
 
+        if ($unlock) {
+            $this->unlock();
+            return;
+        }
+
         $this->writeLn('Welcome to the Cron Manager');
         $this->writeLn('Which Command would you execute?');
         $this->writeLn();
@@ -61,6 +67,7 @@ class ExecCrons extends QUI\System\Console\Tool
 
     /**
      * Read the command from the command line
+     * @throws QUI\Database\Exception
      */
     public function commandRead(): void
     {
@@ -69,6 +76,7 @@ class ExecCrons extends QUI\System\Console\Tool
         $this->writeLn("- list\t\tlist all active crons");
         $this->writeLn("- list-all\tlist all crons");
         $this->writeLn("- cron\trun a specific cron");
+        $this->writeLn("- unlock\tremove the cron execution lock");
         $this->writeLn("- --force\tforce cron execution");
 
         $this->writeLn();
@@ -102,6 +110,18 @@ class ExecCrons extends QUI\System\Console\Tool
                 try {
                     $this->runCron((int)$cronId);
                 } catch (QUI\Exception $Exception) {
+                    $this->writeLn($Exception->getMessage(), 'red');
+                    $this->resetColor();
+                    $this->writeLn();
+                }
+
+                $this->commandRead();
+                break;
+
+            case 'unlock':
+                try {
+                    $this->unlock();
+                } catch (\Exception $Exception) {
                     $this->writeLn($Exception->getMessage(), 'red');
                     $this->resetColor();
                     $this->writeLn();
@@ -231,6 +251,31 @@ class ExecCrons extends QUI\System\Console\Tool
         $Manager->executeCron($cronId);
 
         $this->writeLn('=======================================================');
+        $this->writeLn();
+    }
+
+    /**
+     * Remove the cron execution lock
+     *
+     * @throws QUI\Exception
+     * @throws \Exception
+     */
+    public function unlock(): void
+    {
+        $this->writeLn('Remove cron execution lock ...');
+        $Package = QUI::getPackage('quiqqer/cron');
+
+        if (QUI\Lock\Locker::isLocked($Package, QUI\Cron\Manager::EXECUTION_LOCK_KEY, null, false)) {
+            QUI\Cron\Manager::unlockExecutionLock();
+
+            $this->writeLn('Cron execution lock removed.', 'green');
+            $this->resetColor();
+            $this->writeLn();
+            return;
+        }
+
+        $this->writeLn('No cron execution lock found.', 'yellow');
+        $this->resetColor();
         $this->writeLn();
     }
 }
