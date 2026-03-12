@@ -8,7 +8,7 @@
  * @throws \QUI\Exception
  */
 
-QUI::$Ajax->registerFunction(
+QUI::getAjax()->registerFunction(
     'package_quiqqer_cron_ajax_cron_toggle',
     function ($cronId) {
         $Manager = new QUI\Cron\Manager();

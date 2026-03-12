@@ -1,8 +1,5 @@
 /**
  * Cron History Panel
- *
- * @module package/quiqqer/cron/bin/History
- * @author www.pcsg.de (Henning Leutz)
  */
 
 define('package/quiqqer/cron/bin/History', [

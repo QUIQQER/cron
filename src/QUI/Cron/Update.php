@@ -11,6 +11,11 @@ use QUI;
 use function array_filter;
 use function count;
 use function file_exists;
+use function file_get_contents;
+use function is_array;
+use function json_decode;
+use function json_encode;
+use function file_put_contents;
 use function unlink;
 
 /**
@@ -33,6 +38,10 @@ class Update
             $Package = QUI::getPackage('quiqqer/cron');
             $Config = $Package->getConfig();
         } catch (\Exception) {
+            return;
+        }
+
+        if (!$Config) {
             return;
         }
 
@@ -125,6 +134,10 @@ class Update
             return;
         }
 
+        if (!$Config) {
+            return;
+        }
+
         if (!$Config->get('update', 'auto_update')) {
             return;
         }
@@ -204,7 +217,7 @@ class Update
     //region utils
 
     /**
-     * @param array $packages
+     * @param array<int, array<string, mixed>> $packages
      * @return void
      * @throws QUI\Exception
      */
@@ -218,7 +231,7 @@ class Update
     }
 
     /**
-     * @return array
+     * @return array<int, array<string, mixed>>
      * @throws QUI\Exception
      */
     public static function getAvailableUpdates(): array
@@ -229,7 +242,19 @@ class Update
             return [];
         }
 
-        return json_decode(file_get_contents($file), true);
+        $json = file_get_contents($file);
+
+        if ($json === false) {
+            return [];
+        }
+
+        $result = json_decode($json, true);
+
+        if (!is_array($result)) {
+            return [];
+        }
+
+        return $result;
     }
 
     /**

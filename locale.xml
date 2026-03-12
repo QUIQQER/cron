@@ -38,6 +38,10 @@
         </locale>
     </groups>
     <groups name="quiqqer/cron" datatype="php">
+        <locale name="message.ajax.cronservice.general_error">
+            <de><![CDATA[Das hat leider nicht geklappt. Bitte probiere es erneut oder kontaktiere support@pcsg.de!]]></de>
+            <en><![CDATA[Unfortunately, this did not work. Please try again or contact support@pcsg.de!]]></en>
+        </locale>
         <locale name="message.cron.succesful.executed">
             <de><![CDATA[Die Aufgabe wurde erfolgreich ausgeführt]]></de>
             <en><![CDATA[The Cron ran successfully]]></en>
@@ -837,8 +841,8 @@ This is realized with an external server on which QUIQQER systems can register t
             <en><![CDATA[Status: ]]></en>
         </locale>
         <locale name="cron.window.cronservice.content.register.lbl.stats.errors">
-            <de><![CDATA[Fehlerzahl: ]]></de>
-            <en><![CDATA[Errorcount: ]]></en>
+            <de><![CDATA[Aufgetretene Fehler: ]]></de>
+            <en><![CDATA[Error count: ]]></en>
         </locale>
         <locale name="cron.window.cronservice.content.register.lbl.stats.lastExecution">
             <de><![CDATA[Letzter Aufruf: ]]></de>

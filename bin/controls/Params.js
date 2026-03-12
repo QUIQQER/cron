@@ -1,13 +1,5 @@
 /**
  * Param input field
- *
- * @module package/quiqqer/cron/bin/controls/Params
- * @author www.pcsg.de (Henning Leutz)
- *
- * @require qui/controls/Control
- * @require qui/controls/buttons/Button',
- * @require qui/controls/windows/Confirm',
- * @require css!package/quiqqer/cron/bin/controls/Params.css'
  */
 
 define('package/quiqqer/cron/bin/controls/Params', [

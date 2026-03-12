@@ -1,8 +1,5 @@
 /**
  * Cron Window
- *
- * @module package/quiqqer/cron/bin/CronWindow
- * @author www.pcsg.de (Henning Leutz)
  */
 define('package/quiqqer/cron/bin/CronWindow', [
 
