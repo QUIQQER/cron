@@ -8,6 +8,7 @@ namespace QUI\Cron;
 
 use DateTime;
 use PDO;
+use PDOStatement;
 use QUI;
 use QUI\Database\Exception;
 use Throwable;
@@ -23,7 +24,7 @@ use function unlink;
 
 /**
  * Cron Manager
- * - offers the default crons
+ * - offers the default cron
  */
 class QuiqqerCrons
 {
@@ -62,6 +63,9 @@ class QuiqqerCrons
         QUI\Utils\System\File::unlink(VAR_DIR . 'cache/admin/media/');
     }
 
+    /**
+     * @param array<string, mixed> $params
+     */
     public static function cleanupCronHistory(array $params, Manager $CronManager): void
     {
         $weeks = 8;
@@ -176,7 +180,7 @@ class QuiqqerCrons
     /**
      * alias -> because release was misspelled
      *
-     * @param array $params
+     * @param array<string, mixed> $params
      * @param Manager $CronManager
      * @throws QUI\Exception
      */
@@ -189,7 +193,7 @@ class QuiqqerCrons
      * Check project sites release dates
      * Activate or deactivate sites
      *
-     * @param array $params - Cron Parameter
+     * @param array<string, mixed> $params Cron parameter
      * @param Manager $CronManager
      *
      * @throws QUI\Exception
@@ -202,6 +206,15 @@ class QuiqqerCrons
 
             // search sites with release dates
             $PDO = QUI::getDataBase()->getPDO();
+
+            if (!$PDO instanceof PDO) {
+                QUI\System\Log::addError('No PDO connection available for releaseDate cron.', [
+                    'project' => $Project->getName(),
+                    'lang' => $Project->getLang(),
+                ]);
+
+                return;
+            }
 
             $deactivate = [];
             $activate = [];
@@ -221,6 +234,15 @@ class QuiqqerCrons
                 ;
             "
             );
+
+            if (!$Statement instanceof PDOStatement) {
+                QUI\System\Log::addError('Failed to prepare deactivation query for releaseDate cron.', [
+                    'project' => $Project->getName(),
+                    'lang' => $Project->getLang(),
+                ]);
+
+                return;
+            }
 
             $Statement->bindValue(':date', $now);
             $Statement->execute();
@@ -256,6 +278,15 @@ class QuiqqerCrons
                 ;
             "
             );
+
+            if (!$Statement instanceof PDOStatement) {
+                QUI\System\Log::addError('Failed to prepare activation query for releaseDate cron.', [
+                    'project' => $Project->getName(),
+                    'lang' => $Project->getLang(),
+                ]);
+
+                return;
+            }
 
             $Statement->bindValue(':date', $now);
             //$Statement->bindValue(':empty', '0000-00-00 00:00:00', \PDO::PARAM_STR);
@@ -351,7 +382,7 @@ class QuiqqerCrons
     /**
      * Send the mail queue
      *
-     * @param array $params
+     * @param array<string, mixed> $params
      * @param Manager $CronManager
      * @throws Exception
      */
@@ -364,7 +395,7 @@ class QuiqqerCrons
     /**
      * Calculate the sizes of the media folders of each project
      *
-     * @param array $params
+     * @param array<string, mixed> $params
      * @param Manager $CronManager
      */
     public static function calculateMediaFolderSizes(array $params, Manager $CronManager): void
@@ -381,7 +412,7 @@ class QuiqqerCrons
      * Calculate and caches the sizes of the package-folder.
      * The cached value is used by some system functions.
      *
-     * @param array $params
+     * @param array<string, mixed> $params
      * @param Manager $CronManager
      */
     public static function calculatePackageFolderSize(array $params, Manager $CronManager): void
@@ -393,7 +424,7 @@ class QuiqqerCrons
      * Calculate and caches the sizes of the package-folder.
      * The cached value is used by some system functions.
      *
-     * @param array $params
+     * @param array<string, mixed> $params
      * @param Manager $CronManager
      */
     public static function calculateCacheFolderSize(array $params, Manager $CronManager): void
@@ -405,7 +436,7 @@ class QuiqqerCrons
      * Calculate and caches the sizes of the package-folder.
      * The cached value is used by some system functions.
      *
-     * @param array $params
+     * @param array<string, mixed> $params
      * @param Manager $CronManager
      */
     public static function calculateWholeInstallationFolderSize(array $params, Manager $CronManager): void
@@ -417,7 +448,7 @@ class QuiqqerCrons
      * Counts and caches the amount of files in the QUIQQER installation folder.
      * The cached value is used by some system functions.
      *
-     * @param array $params
+     * @param array<string, mixed> $params
      * @param Manager $CronManager
      */
     public static function countAllFilesInInstallation(array $params, Manager $CronManager): void
@@ -429,7 +460,7 @@ class QuiqqerCrons
      * Calculate and caches the sizes of the VAR-folder.
      * The cached value is used by some system functions.
      *
-     * @param array $params
+     * @param array<string, mixed> $params
      * @param Manager $CronManager
      */
     public static function calculateVarFolderSize(array $params, Manager $CronManager): void
