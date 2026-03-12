@@ -8,7 +8,7 @@
 
 use QUI\Cron\Manager;
 
-QUI::$Ajax->registerFunction(
+QUI::getAjax()->registerFunction(
     'package_quiqqer_cron_ajax_updateCheck',
     function () {
         // only execute if quiqqer is completely set up

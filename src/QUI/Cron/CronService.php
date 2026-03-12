@@ -3,7 +3,30 @@
 namespace QUI\Cron;
 
 use QUI;
+use QUI\Exception;
 use QUI\System\Log;
+
+use function curl_close;
+use function curl_exec;
+use function curl_init;
+use function curl_setopt;
+use function curl_setopt_array;
+use function file_exists;
+use function file_get_contents;
+use function file_put_contents;
+use function is_array;
+use function is_dir;
+use function is_string;
+use function json_decode;
+use function json_last_error;
+use function json_last_error_msg;
+use function mkdir;
+use function rtrim;
+use function str_contains;
+use function str_replace;
+use function str_starts_with;
+use function substr;
+use function urlencode;
 
 class CronService
 {
@@ -14,21 +37,39 @@ class CronService
 
     /**
      * CronService constructor.
-     * @throws \QUI\Exception
+     * @throws Exception
      */
     public function __construct()
     {
-        $host = QUI::$Conf->get("globals", "host");
-        $cms_dir = QUI::$Conf->get("globals", "cms_dir");
-        $opt_dir = QUI::$Conf->get("globals", "opt_dir");
-        $url_dir = QUI::$Conf->get("globals", "url_dir");
+        $host = '';
+        $cms_dir = '';
+        $opt_dir = '';
+        $url_dir = '';
+
+        if (QUI::$Conf) {
+            $host = (string)QUI::$Conf->get("globals", "host");
+            $cms_dir = (string)QUI::$Conf->get("globals", "cms_dir");
+            $opt_dir = (string)QUI::$Conf->get("globals", "opt_dir");
+            $url_dir = (string)QUI::$Conf->get("globals", "url_dir");
+        }
 
         // VHost Domain
-        $vhost = QUI::getProjectManager()->getStandard()->getVHost(true, true);
+        $vhost = '';
+        $Standard = QUI::getProjectManager()->getStandard();
+
+        if ($Standard) {
+            $standardVhost = $Standard->getVHost(true, true);
+
+            if (is_string($standardVhost)) {
+                $vhost = $standardVhost;
+            }
+        }
 
         // Check if https should be used.
         if (str_starts_with($vhost, 'https://')) {
             $this->https = true;
+        } else {
+            $this->https = false;
         }
 
         $this->domain = str_replace("https://", "", $vhost);
@@ -52,19 +93,25 @@ class CronService
         $this->packageDir = $url_dir . str_replace($cms_dir, "", $opt_dir);
 
         $config = QUI::getPackage('quiqqer/cron')->getConfig();
-        $baseUrl = $config->get('cronservice', 'base_url');
+        $baseUrl = '';
+
+        if ($config) {
+            $configuredBaseUrl = $config->get('cronservice', 'base_url');
+
+            if (is_string($configuredBaseUrl)) {
+                $baseUrl = $configuredBaseUrl;
+            }
+        }
+
         $this->baseUrl = !empty($baseUrl) ? rtrim($baseUrl, '/') : 'https://cron.quiqqer.com';
     }
 
     /**
      * Will register this quiqqer instance.
      *
-     * @param $email - Email used for communication. Must be valid.
-     *
      * @throws Exception
-     * @throws \QUI\Exception
      */
-    public function register($email): void
+    public function register(string $email): void
     {
         $this->sendRegistrationRequest($this->domain, $email, $this->packageDir, $this->https);
     }
@@ -81,7 +128,7 @@ class CronService
      * )
      *
      * @return mixed
-     * @throws \QUI\Exception
+     * @throws Exception
      */
     public function getStatus(): mixed
     {
@@ -123,7 +170,7 @@ class CronService
 
     /**
      * Revoked the registration for this quiqqer instance
-     * @throws \QUI\Exception
+     * @throws Exception
      */
     public function revokeRegistration(): void
     {
@@ -135,15 +182,18 @@ class CronService
         ]);
 
         $Config = QUI::getPackage("quiqqer/cron")->getConfig();
-        $Config->set("settings", "executeOnAdminLogin", 1);
-        $Config->save();
+
+        if ($Config) {
+            $Config->set("settings", "executeOnAdminLogin", 1);
+            $Config->save();
+        }
     }
 
     /**
      * Requests the cronservice to resend the activation email
      *
      * @throws Exception
-     * @throws \QUI\Exception
+     * @throws Exception
      */
     public function resendActivationMail(): void
     {
@@ -163,7 +213,7 @@ class CronService
      * Attempts to cancel the registration on the server
      *
      * @throws Exception
-     * @throws \QUI\Exception
+     * @throws Exception
      */
     public function cancelRegistration(): void
     {
@@ -179,22 +229,20 @@ class CronService
         );
 
         $Config = QUI::getPackage("quiqqer/cron")->getConfig();
-        $Config->set("settings", "executeOnAdminLogin", 1);
-        $Config->save();
+
+        if ($Config) {
+            $Config->set("settings", "executeOnAdminLogin", 1);
+            $Config->save();
+        }
     }
 
     /**
      * Sends an ajax request to the cron service server.
      *
-     * @param $domain - The domain to be registered. Example : example.org
-     * @param $email - The Email that should be used for communication.
-     * @param $packageDir - The package url dir
-     * @param $https - weather or not http secure should be used to call the cron.php
-     *
      * @throws Exception
-     * @throws \QUI\Exception
+     * @throws Exception
      */
-    private function sendRegistrationRequest($domain, $email, $packageDir, $https): void
+    private function sendRegistrationRequest(string $domain, string $email, string $packageDir, bool $https): void
     {
         if (empty($domain)) {
             throw new CronServiceException(["quiqqer/cron", "exception.registration.empty.domain"]);
@@ -230,6 +278,12 @@ class CronService
         }
 
         $response = curl_exec($curl);
+
+        if (!is_string($response)) {
+            curl_close($curl);
+            throw new Exception("Could not contact cron service.");
+        }
+
         $response = substr($response, 9, -10);
         $data = json_decode($response, true);
 
@@ -256,26 +310,32 @@ class CronService
             throw new Exception("Something went wrong!");
         }
 
+        if (!isset($data['revokeCode']) || !is_string($data['revokeCode'])) {
+            throw new Exception("Missing revoke code.");
+        }
+
         $revokeCode = $data['revokeCode'];
         $this->saveRevokeToken($revokeCode);
 
         curl_close($curl);
 
         $Config = QUI::getPackage("quiqqer/cron")->getConfig();
-        $Config->set("settings", "executeOnAdminLogin", 0);
-        $Config->save();
+
+        if ($Config) {
+            $Config->set("settings", "executeOnAdminLogin", 0);
+            $Config->save();
+        }
     }
 
     /**
      * Calls the given ajax function on the Cron service server and returns its output
      *
-     * @param $function - Ajax function name
-     * @param $params - Params to pass
-     *
+     * @param string $function
+     * @param array<string, scalar> $params
      * @return mixed
-     * @throws QUI\Exception
+     * @throws Exception
      */
-    private function makeServerAjaxCall($function, $params): mixed
+    private function makeServerAjaxCall(string $function, array $params): mixed
     {
         $url = $this->baseUrl . "/admin/ajax.php?" .
             "_rf=" . urlencode('["' . $function . '"]') .
@@ -283,7 +343,7 @@ class CronService
             "&lang=" . QUI::getUserBySession()->getLang();
 
         foreach ($params as $param => $value) {
-            $url .= '&' . $param . '=' . urlencode($value);
+            $url .= '&' . $param . '=' . urlencode((string)$value);
         }
 
         $curl = curl_init();
@@ -297,13 +357,20 @@ class CronService
 
         curl_close($curl);
 
+        if (!is_string($response)) {
+            throw new Exception('Could not contact cron service.');
+        }
+
         // Process raw ajax response
         $response = substr($response, 9, -10);
         $response = json_decode($response, true);
 
+        if (!is_array($response)) {
+            throw new Exception('Invalid cron service response.');
+        }
 
         if (isset($response[$function]['Exception'])) {
-            throw new QUI\Exception($response[$function]['Exception']['message']);
+            throw new Exception($response[$function]['Exception']['message']);
         }
 
         return $response[$function]['result'];
@@ -312,10 +379,9 @@ class CronService
     /**
      * Saves the revoke token into a file
      *
-     * @param $token
-     * @throws \QUI\Exception
+     * @throws Exception
      */
-    private function saveRevokeToken($token): void
+    private function saveRevokeToken(string $token): void
     {
         $varDir = QUI::getPackage('quiqqer/cron')->getVarDir() . '/cronservice';
         $fileName = $varDir . '/.revoketoken';
@@ -333,7 +399,7 @@ class CronService
      * @return string
      *
      * @throws Exception
-     * @throws \QUI\Exception
+     * @throws Exception
      */
     private function readRevokeToken(): string
     {

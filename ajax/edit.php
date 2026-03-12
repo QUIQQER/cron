@@ -13,7 +13,7 @@
  * @param String $params
  */
 
-QUI::$Ajax->registerFunction(
+QUI::getAjax()->registerFunction(
     'package_quiqqer_cron_ajax_edit',
     function ($cronId, $cron, $min, $hour, $day, $month, $dayOfWeek, $params) {
         $params = json_decode($params, true);

@@ -3,7 +3,7 @@
 use QUI\Cron\CronService;
 use QUI\Cron\CronServiceException;
 
-QUI::$Ajax->registerFunction(
+QUI::getAjax()->registerFunction(
     'package_quiqqer_cron_ajax_cronservice_getStatus',
     /**
      * Gets the current Status for this instance

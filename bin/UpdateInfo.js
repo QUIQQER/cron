@@ -1,8 +1,5 @@
 /**
  * Update check
- *
- * @module package/quiqqer/cron/bin/UpdateInfo
- * @author www.pcsg.de (Henning Leutz)
  */
 define('package/quiqqer/cron/bin/UpdateInfo', [
 

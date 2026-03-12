@@ -7,8 +7,6 @@ use QUI\Exception;
 
 /**
  * Cron Console Manager
- *
- * @author www.pcsg.de (Henning Leutz)
  */
 class ExecCrons extends QUI\System\Console\Tool
 {
@@ -23,14 +21,14 @@ class ExecCrons extends QUI\System\Console\Tool
 
     /**
      * @throws Exception
-     * @see \QUI\System\Console\Tool::execute()
      */
     public function execute(): void
     {
         $run = $this->getArgument('--run');
         $list = $this->getArgument('--list');
-        $listall = $this->getArgument('--list-all');
+        $listAll = $this->getArgument('--list-all');
         $runCron = $this->getArgument('--cron');
+        $unlock = $this->getArgument('--unlock');
 
         if ($run) {
             $this->run();
@@ -42,13 +40,18 @@ class ExecCrons extends QUI\System\Console\Tool
             return;
         }
 
-        if ($listall) {
+        if ($listAll) {
             $this->listAllCrons();
             return;
         }
 
         if ($runCron) {
             $this->runCron($runCron);
+            return;
+        }
+
+        if ($unlock) {
+            $this->unlock();
             return;
         }
 
@@ -61,15 +64,17 @@ class ExecCrons extends QUI\System\Console\Tool
 
     /**
      * Read the command from the command line
+     * @throws QUI\Database\Exception
      */
     public function commandRead(): void
     {
         $this->writeLn('Available Commands: ');
-        $this->writeLn("- run\t\trun all active crons");
-        $this->writeLn("- list\t\tlist all active crons");
-        $this->writeLn("- list-all\tlist all crons");
-        $this->writeLn("- cron\trun a specific cron");
-        $this->writeLn("- --force\tforce cron execution");
+        $this->writeLn("- run\t\trun all active cron");
+        $this->writeLn("- list\t\tlist all active cron");
+        $this->writeLn("- list-all\tlist all cron");
+        $this->writeLn("- cron\t\trun a specific cron");
+        $this->writeLn("- unlock\tremove the cron execution lock");
+        $this->writeLn("- force\t\tforce cron execution");
 
         $this->writeLn();
 
@@ -77,19 +82,19 @@ class ExecCrons extends QUI\System\Console\Tool
         $command = $this->readInput();
 
         switch ($command) {
-            // run all crons
+            // run all cron
             case 'run':
                 $this->run();
                 $this->commandRead();
                 break;
 
-            // list all inserted crons
+            // list all inserted cron
             case 'list':
                 $this->listCrons();
                 $this->commandRead();
                 break;
 
-            // list all inserted crons
+            // list all inserted cron
             case 'list-all':
                 $this->listAllCrons();
                 $this->commandRead();
@@ -110,6 +115,18 @@ class ExecCrons extends QUI\System\Console\Tool
                 $this->commandRead();
                 break;
 
+            case 'unlock':
+                try {
+                    $this->unlock();
+                } catch (\Exception $Exception) {
+                    $this->writeLn($Exception->getMessage(), 'red');
+                    $this->resetColor();
+                    $this->writeLn();
+                }
+
+                $this->commandRead();
+                break;
+
             default:
                 $this->writeLn(
                     'Command not found, please type another command',
@@ -121,14 +138,14 @@ class ExecCrons extends QUI\System\Console\Tool
     }
 
     /**
-     * Execute all upcoming crons
+     * Execute all upcoming cron
      */
     public function run(): void
     {
         $Manager = new QUI\Cron\Manager();
 
         $this->writeLn();
-        $this->write('Execute all upcoming crons ...');
+        $this->write('Execute all upcoming cron ...');
 
         try {
             if ($this->getArgument('--force')) {
@@ -145,7 +162,7 @@ class ExecCrons extends QUI\System\Console\Tool
     }
 
     /**
-     * List all active crons
+     * List all active cron
      * @throws QUI\Database\Exception
      */
     public function listCrons(): void
@@ -181,7 +198,7 @@ class ExecCrons extends QUI\System\Console\Tool
     }
 
     /**
-     * List all inserted Crons
+     * List all inserted Cron
      * @throws QUI\Database\Exception
      */
     public function listAllCrons(): void
@@ -220,6 +237,12 @@ class ExecCrons extends QUI\System\Console\Tool
      */
     public function runCron(bool | int $cronId = false): void
     {
+        if (!is_numeric($cronId)) {
+            throw new QUI\Exception('Cron ID must be an integer');
+        }
+
+        $cronId = (int)$cronId;
+
         $Manager = new QUI\Cron\Manager();
         $cron = $Manager->getCronById($cronId);
 
@@ -231,6 +254,31 @@ class ExecCrons extends QUI\System\Console\Tool
         $Manager->executeCron($cronId);
 
         $this->writeLn('=======================================================');
+        $this->writeLn();
+    }
+
+    /**
+     * Remove the cron execution lock
+     *
+     * @throws QUI\Exception
+     * @throws \Exception
+     */
+    public function unlock(): void
+    {
+        $this->writeLn('Remove cron execution lock ...');
+        $Package = QUI::getPackage('quiqqer/cron');
+
+        if (QUI\Lock\Locker::isLocked($Package, QUI\Cron\Manager::EXECUTION_LOCK_KEY, null, false)) {
+            QUI\Cron\Manager::unlockExecutionLock();
+
+            $this->writeLn('Cron execution lock removed.', 'green');
+            $this->resetColor();
+            $this->writeLn();
+            return;
+        }
+
+        $this->writeLn('No cron execution lock found.', 'yellow');
+        $this->resetColor();
         $this->writeLn();
     }
 }

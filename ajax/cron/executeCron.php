@@ -6,7 +6,7 @@
  * @param integer $cronId - Cron-ID
  */
 
-QUI::$Ajax->registerFunction(
+QUI::getAjax()->registerFunction(
     'package_quiqqer_cron_ajax_cron_executeCron',
     function ($cronId) {
         $Manager = new QUI\Cron\Manager();

@@ -1,8 +1,5 @@
 /**
  * Cron Manager
- *
- * @module package/quiqqer/cron/bin/Manager
- * @author www.pcsg.de (Henning Leutz)
  */
 define('package/quiqqer/cron/bin/Manager', [
 

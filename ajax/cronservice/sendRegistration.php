@@ -3,7 +3,7 @@
 use QUI\Cron\CronService;
 use QUI\Cron\CronServiceException;
 
-QUI::$Ajax->registerFunction(
+QUI::getAjax()->registerFunction(
     'package_quiqqer_cron_ajax_cronservice_sendRegistration',
     /**
      * Registers this system with a QUIQQER cron service.
