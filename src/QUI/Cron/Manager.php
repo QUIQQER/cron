@@ -53,7 +53,15 @@ class Manager
     /**
      * Data about the current runtime
      *
-     * @var array
+     * @var array{
+     *     currentCronTitle: string,
+     *     currentCronId: int,
+     *     finished: int,
+     *     total: int,
+     *     startAll: string|false,
+     *     startCurrent: string|false,
+     *     lockEnd: string|false
+     * }
      */
     protected static array $runtime = [
         'currentCronTitle' => '',
@@ -96,7 +104,7 @@ class Manager
      * @param int|string $month - On which month should it start
      * @param int|string $dayOfWeek - day of week (0 - 6) (0 to 6 are Sunday to Saturday,
      *                          or use names; 7 is Sunday, the same as 0)
-     * @param array $params - Cron Parameter
+     * @param array<string, mixed> $params Cron parameter
      *
      * @throws QUI\Exception
      */
@@ -119,6 +127,13 @@ class Manager
         }
 
         $cronData = $this->getCronData($cron);
+
+        if ($cronData === false) {
+            throw new QUI\Exception(
+                QUI::getLocale()->get('quiqqer/cron', 'exception.cron.1001'),
+                1001
+            );
+        }
 
         if (!empty($params['exec'])) {
             $cronData['exec'] = $params['exec'];
@@ -155,7 +170,7 @@ class Manager
      * @param int|string $day
      * @param int|string $month
      * @param int|string $dayOfWeek
-     * @param array $params
+     * @param array<string, mixed> $params
      *
      * @throws QUI\Exception
      */
@@ -179,6 +194,13 @@ class Manager
         }
 
         $cronData = $this->getCronData($cron);
+
+        if ($cronData === false) {
+            throw new QUI\Exception(
+                QUI::getLocale()->get('quiqqer/cron', 'exception.cron.1002'),
+                1002
+            );
+        }
 
         // test the cron data
         try {
@@ -246,7 +268,7 @@ class Manager
     /**
      * Delete the crons
      *
-     * @param array $ids - Array of the Cron-Ids
+     * @param array<int, int|string> $ids Array of the cron IDs
      * @throws QUI\Permissions\Exception|Exception
      */
     public function deleteCronIds(array $ids): void
@@ -284,6 +306,11 @@ class Manager
 
         $Package = null;
         $Start = date_create();
+
+        if ($Start === false) {
+            $Start = new DateTime();
+        }
+
         $EndTime = clone $Start;
 
         self::$runtime['startAll'] = $Start->format('Y-m-d H:i:s');
@@ -305,7 +332,13 @@ class Manager
                 }
 
                 $lockTime = self::getLockTime(); // lock time in seconds
-                $EndTime = $EndTime->add(date_interval_create_from_date_string($lockTime . ' seconds'));
+                $Interval = date_interval_create_from_date_string($lockTime . ' seconds');
+
+                if ($Interval === false) {
+                    throw new QUI\Exception('Could not create lock timeout interval.');
+                }
+
+                $EndTime = $EndTime->add($Interval);
 
                 self::$runtime['lockEnd'] = $EndTime->format('Y-m-d H:i:s');
 
@@ -489,7 +522,7 @@ class Manager
     /**
      * Return the Crons which are available and from other Plugins provided
      *
-     * @return array
+     * @return array<int, array<string, mixed>>
      */
     public function getAvailableCrons(): array
     {
@@ -520,7 +553,7 @@ class Manager
      *
      * @param integer $cronId - ID of the Cron
      *
-     * @return array|false - Cron Data
+     * @return array<string, mixed>|false Cron data
      * @throws Exception
      */
     public function getCronById(int $cronId): bool | array
@@ -546,7 +579,7 @@ class Manager
      *
      * @param string $cron - Cron-Identifier (package/package:NO) or name of the Cron or exec path of cron
      *
-     * @return array|false - Cron Data
+     * @return array<string, mixed>|false Cron data
      */
     public function getCronData(string $cron): bool | array
     {
@@ -583,9 +616,9 @@ class Manager
     /**
      * Return the history list
      *
-     * @param array $params - select params -> (page, perPage)
+     * @param array<string, int|string> $params Select params -> (page, perPage)
      *
-     * @return array
+     * @return array<int, array<string, mixed>>
      * @throws Exception
      */
     public function getHistoryList(array $params = []): array
@@ -664,7 +697,7 @@ class Manager
     /**
      * Return the cron list
      *
-     * @return array
+     * @return array<int, array<string, mixed>>
      * @throws Exception
      */
     public function getList(): array
@@ -711,7 +744,7 @@ class Manager
      * Check if a specific cron exists based on its executed method and exact parameters.
      *
      * @param string $exec - Execution path to static class method
-     * @param array $params (optional) - Cron parameters
+     * @param array<string, mixed> $params Cron parameters
      * @return bool
      *
      * @throws QUI\Exception
@@ -754,7 +787,7 @@ class Manager
      */
 
     /**
-     * Return the cron tabe
+     * Return the cron table
      *
      * @return string
      */
@@ -764,7 +797,7 @@ class Manager
     }
 
     /**
-     * Return the cron tabe
+     * Return the cron table
      *
      * @return string
      */
@@ -774,11 +807,10 @@ class Manager
     }
 
     /**
-     * Return the Crons from an XML File
+     * Return the Cron from an XML File
      *
      * @param string $file
-     *
-     * @return array
+     * @return array<int, array<string, mixed>>
      */
     public static function getCronsFromFile(string $file): array
     {
@@ -793,8 +825,12 @@ class Manager
             return [];
         }
 
-        /* @var $Crons DOMElement */
         $Crons = $crons->item(0);
+
+        if (!$Crons instanceof DOMElement) {
+            return [];
+        }
+
         $list = $Crons->getElementsByTagName('cron');
 
         if (!$list->length) {
@@ -806,12 +842,15 @@ class Manager
         for ($i = 0; $i < $list->length; $i++) {
             $Cron = $list->item($i);
 
+            if (!$Cron instanceof DOMElement) {
+                continue;
+            }
+
             $title = '';
             $desc = '';
             $required = false;
             $params = [];
 
-            /* @var $Cron DOMElement */
             $Title = $Cron->getElementsByTagName('title');
             $Desc = $Cron->getElementsByTagName('description');
             $Params = $Cron->getElementsByTagName('params');
@@ -824,11 +863,19 @@ class Manager
             }
 
             if ($Title->length) {
-                $title = QUI\Utils\DOM::getTextFromNode($Title->item(0));
+                $TitleNode = $Title->item(0);
+
+                if ($TitleNode instanceof DOMElement) {
+                    $title = QUI\Utils\DOM::getTextFromNode($TitleNode);
+                }
             }
 
             if ($Desc->length) {
-                $desc = QUI\Utils\DOM::getTextFromNode($Desc->item(0));
+                $DescNode = $Desc->item(0);
+
+                if ($DescNode instanceof DOMElement) {
+                    $desc = QUI\Utils\DOM::getTextFromNode($DescNode);
+                }
             }
 
             if ($Params->length) {
@@ -836,6 +883,10 @@ class Manager
 
                 for ($j = 0; $j < $Params->length; $j++) {
                     $ParamsNode = $Params->item($j);
+
+                    if (!$ParamsNode instanceof DOMElement) {
+                        continue;
+                    }
 
                     if (
                         $ParamsNode->parentNode
@@ -888,7 +939,13 @@ class Manager
                         continue;
                     }
 
-                    $interval = trim($Interval->item(0)->textContent);
+                    $IntervalNode = $Interval->item(0);
+
+                    if (!$IntervalNode instanceof DOMElement) {
+                        continue;
+                    }
+
+                    $interval = trim($IntervalNode->textContent);
                     [$min, $hour, $day, $month, $dayOfWeek] = explode(' ', $interval);
 
                     $min = trim($min);
@@ -915,8 +972,13 @@ class Manager
                     $autoCreateParams = [];
 
                     if ($AutoCreateParams->length) {
-                        $AutoCreateParams = $AutoCreateParams->item(0);
-                        $AutoCreateParams = $AutoCreateParams->getElementsByTagName('param');
+                        $AutoCreateParamsNode = $AutoCreateParams->item(0);
+
+                        if (!$AutoCreateParamsNode instanceof DOMElement) {
+                            continue;
+                        }
+
+                        $AutoCreateParams = $AutoCreateParamsNode->getElementsByTagName('param');
 
                         foreach ($AutoCreateParams as $AutoCreateParam) {
                             $autoCreateParams[] = [
@@ -928,9 +990,13 @@ class Manager
 
                     $autocreate[] = [
                         'interval' => "$min $hour $day $month $dayOfWeek",
-                        'active' => $Active->length && $Active->item(0)->textContent,
+                        'active' => $Active->length
+                            && $Active->item(0) instanceof DOMElement
+                            && $Active->item(0)->textContent,
                         'params' => $autoCreateParams,
-                        'scope' => $Scope->length ? trim($Scope->item(0)->textContent) : false,
+                        'scope' => $Scope->length && $Scope->item(0) instanceof DOMElement
+                            ? trim($Scope->item(0)->textContent)
+                            : false,
                     ];
                 }
             }
@@ -972,8 +1038,15 @@ class Manager
         }
 
         try {
+            $Config = QUI::getPackage('quiqqer/cron')->getConfig();
+
+            if (!$Config) {
+                self::$writeCronLog = false;
+                return self::$writeCronLog;
+            }
+
             self::$writeCronLog = boolval(
-                QUI::getPackage('quiqqer/cron')->getConfig()->get(
+                $Config->get(
                     'settings',
                     'writeCronLog'
                 )
@@ -1000,6 +1073,10 @@ class Manager
 
         try {
             $Conf = QUI::getPackage('quiqqer/cron')->getConfig();
+
+            if (!$Conf) {
+                return;
+            }
 
             if (empty($Conf->get('settings', 'cron_lock_timeout_notification'))) {
                 return;
@@ -1031,8 +1108,16 @@ class Manager
                 $L->get('quiqqer/cron', 'notification.lock_timeout.subject')
             );
 
+            if (self::$runtime['lockEnd'] === false) {
+                return;
+            }
+
             $End = date_create(self::$runtime['lockEnd']);
             $Now = date_create();
+
+            if ($End === false || $Now === false) {
+                return;
+            }
 
             $TimeDiff = $End->diff($Now);
 
@@ -1064,6 +1149,11 @@ class Manager
     {
         try {
             $Conf = QUI::getPackage('quiqqer/cron')->getConfig();
+
+            if (!$Conf) {
+                return 1440;
+            }
+
             $lockTime = $Conf->get('settings', 'cron_lock_time');
 
             if (empty($lockTime)) {
