@@ -7,6 +7,7 @@
 namespace QUI\Cron;
 
 use DateTime;
+use PDO;
 use QUI;
 use QUI\Exception;
 use QUI\System\Console\Tools\MigrationV2;
@@ -51,17 +52,29 @@ class EventHandler
      */
     protected static function checkCronTable(): void
     {
-        $categoryColumn = QUI::getDataBase()->table()->getColumn('cron', 'title');
+        $Tables = QUI::getDataBase()->table();
+
+        if (!$Tables) {
+            return;
+        }
+
+        $PDO = QUI::getDataBase()->getPDO();
+
+        if (!$PDO instanceof PDO) {
+            return;
+        }
+
+        $categoryColumn = $Tables->getColumn('cron', 'title');
 
         if ($categoryColumn['Type'] !== 'varchar(1000)') {
-            $Statement = QUI::getDataBase()->getPDO()->prepare("ALTER TABLE cron MODIFY `title` VARCHAR(1000)");
+            $Statement = $PDO->prepare("ALTER TABLE cron MODIFY `title` VARCHAR(1000)");
             $Statement->execute();
         }
 
-        $cronHistoryUidColumn = QUI::getDataBase()->table()->getColumn('cron_history', 'uid');
+        $cronHistoryUidColumn = $Tables->getColumn('cron_history', 'uid');
 
         if ($cronHistoryUidColumn['Type'] !== 'varchar(50)') {
-            $Statement = QUI::getDataBase()->getPDO()->prepare("ALTER TABLE cron_history MODIFY `uid` VARCHAR(50)");
+            $Statement = $PDO->prepare("ALTER TABLE cron_history MODIFY `uid` VARCHAR(50)");
             $Statement->execute();
         }
     }
@@ -93,6 +106,9 @@ class EventHandler
             return;
         }
 
+        if (!$Config) {
+            return;
+        }
 
         // send admin info
         if (!$Config->get('settings', 'showAdminMessageIfCronNotRun')) {
@@ -133,6 +149,10 @@ class EventHandler
             $Package = QUI::getPackageManager()->getInstalledPackage('quiqqer/cron');
             $Config = $Package->getConfig();
         } catch (QUI\Exception) {
+            return;
+        }
+
+        if (!$Config) {
             return;
         }
 
@@ -250,13 +270,19 @@ class EventHandler
                     try {
                         $CronManager->add($title, $min, $hour, $day, $month, $dayOfWeek, $createParams);
 
-                        $cronId = QUI::getDataBase()->getPDO()->lastInsertId('id');
+                        $PDO = QUI::getDataBase()->getPDO();
+
+                        if (!$PDO instanceof PDO) {
+                            continue;
+                        }
+
+                        $cronId = $PDO->lastInsertId('id');
 
                         if (!$autocreate['active']) {
                             QUI::getDataBase()->update(
                                 $CronManager::table(),
                                 ['active' => 0],
-                                ['id' => $cronId]
+                                ['id' => (int)$cronId]
                             );
                         }
                     } catch (\Exception $Exception) {
@@ -270,8 +296,8 @@ class EventHandler
     /**
      * Get all crons to create for autocreate scope "projects".
      *
-     * @param array $params
-     * @return array
+     * @param array<string, string> $params
+     * @return array<int, array<string, string>>
      */
     protected static function getCronsToCreateForProjectsScope(array $params): array
     {
@@ -309,8 +335,8 @@ class EventHandler
     /**
      * Get all crons to create for autocreate scope "languages".
      *
-     * @param array $params
-     * @return array
+     * @param array<string, string> $params
+     * @return array<int, array<string, string>>
      */
     protected static function getCronsToCreateForLanguagesScope(array $params): array
     {

@@ -3,6 +3,7 @@
 namespace QUI\Cron;
 
 use QUI;
+use QUI\Exception;
 use QUI\System\Log;
 
 use function curl_close;
@@ -36,7 +37,7 @@ class CronService
 
     /**
      * CronService constructor.
-     * @throws \QUI\Exception
+     * @throws Exception
      */
     public function __construct()
     {
@@ -109,7 +110,6 @@ class CronService
      * Will register this quiqqer instance.
      *
      * @throws Exception
-     * @throws \QUI\Exception
      */
     public function register(string $email): void
     {
@@ -128,7 +128,7 @@ class CronService
      * )
      *
      * @return mixed
-     * @throws \QUI\Exception
+     * @throws Exception
      */
     public function getStatus(): mixed
     {
@@ -170,7 +170,7 @@ class CronService
 
     /**
      * Revoked the registration for this quiqqer instance
-     * @throws \QUI\Exception
+     * @throws Exception
      */
     public function revokeRegistration(): void
     {
@@ -193,7 +193,7 @@ class CronService
      * Requests the cronservice to resend the activation email
      *
      * @throws Exception
-     * @throws \QUI\Exception
+     * @throws Exception
      */
     public function resendActivationMail(): void
     {
@@ -213,7 +213,7 @@ class CronService
      * Attempts to cancel the registration on the server
      *
      * @throws Exception
-     * @throws \QUI\Exception
+     * @throws Exception
      */
     public function cancelRegistration(): void
     {
@@ -240,7 +240,7 @@ class CronService
      * Sends an ajax request to the cron service server.
      *
      * @throws Exception
-     * @throws \QUI\Exception
+     * @throws Exception
      */
     private function sendRegistrationRequest(string $domain, string $email, string $packageDir, bool $https): void
     {
@@ -330,9 +330,10 @@ class CronService
     /**
      * Calls the given ajax function on the Cron service server and returns its output
      *
+     * @param string $function
      * @param array<string, scalar> $params
      * @return mixed
-     * @throws QUI\Exception
+     * @throws Exception
      */
     private function makeServerAjaxCall(string $function, array $params): mixed
     {
@@ -357,7 +358,7 @@ class CronService
         curl_close($curl);
 
         if (!is_string($response)) {
-            throw new QUI\Exception('Could not contact cron service.');
+            throw new Exception('Could not contact cron service.');
         }
 
         // Process raw ajax response
@@ -365,11 +366,11 @@ class CronService
         $response = json_decode($response, true);
 
         if (!is_array($response)) {
-            throw new QUI\Exception('Invalid cron service response.');
+            throw new Exception('Invalid cron service response.');
         }
 
         if (isset($response[$function]['Exception'])) {
-            throw new QUI\Exception($response[$function]['Exception']['message']);
+            throw new Exception($response[$function]['Exception']['message']);
         }
 
         return $response[$function]['result'];
@@ -378,7 +379,7 @@ class CronService
     /**
      * Saves the revoke token into a file
      *
-     * @throws \QUI\Exception
+     * @throws Exception
      */
     private function saveRevokeToken(string $token): void
     {
@@ -398,7 +399,7 @@ class CronService
      * @return string
      *
      * @throws Exception
-     * @throws \QUI\Exception
+     * @throws Exception
      */
     private function readRevokeToken(): string
     {
