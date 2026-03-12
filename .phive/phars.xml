@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phive xmlns="https://phar.io/phive">
   <phar name="phpstan" version="2.1.40" installed="2.1.40" location="./tools/phpstan" copy="true"/>
-  <phar name="phpunit" version="13.0.5" installed="13.0.5" location="./tools/phpunit" copy="true"/>
+  <phar name="phpunit" version="10.*" installed="10.5.60" location="./tools/phpunit" copy="false"/>
   <phar name="phpcs" version="^3.9.2" installed="3.13.5" location="./tools/phpcs" copy="false"/>
   <phar name="phpcbf" version="^3.9.2" installed="3.13.5" location="./tools/phpcbf" copy="false"/>
   <phar name="captainhook" version="^5.23.3" installed="5.28.5" location="./tools/captainhook" copy="false"/>
