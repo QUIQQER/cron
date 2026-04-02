@@ -7,7 +7,10 @@
 namespace QUI\Cron;
 
 use Cron\CronExpression;
+use DateMalformedStringException;
 use DateTime;
+use DateTimeImmutable;
+use DateTimeInterface;
 use DOMElement;
 use QUI;
 use QUI\Database\Exception;
@@ -358,7 +361,6 @@ class Manager
         Permission::checkPermission('quiqqer.cron.execute');
 
         $list = $this->getList();
-        $time = time();
 
         $activeList = array_filter($list, function ($entry) {
             return $entry['active'] == 1;
@@ -367,28 +369,13 @@ class Manager
         self::$runtime['total'] = count($activeList);
 
         foreach ($activeList as $entry) {
-            $lastExec = $entry['lastexec'];
-
-            if (empty($lastExec)) {
-                $lastExec = new DateTime();
-                $lastExec->setTimestamp(0);
-            }
-
-            $min = $entry['min'];
-            $hour = $entry['hour'];
-            $day = $entry['day'];
-            $month = $entry['month'];
-            $dayOfWeek = '*';
-
-            if (isset($entry['dayOfWeek'])) {
-                $dayOfWeek = $entry['dayOfWeek'];
-            }
-
-            $cronExpression = "$min $hour $day $month $dayOfWeek";
+            $cronExpression = $this->getCronExpression($entry);
 
             try {
-                $Cron = new CronExpression($cronExpression);
-                $next = $Cron->getNextRunDate($lastExec)->getTimestamp();
+                if (!$this->shouldExecuteCron($entry)) {
+                    self::$runtime['finished']++;
+                    continue;
+                }
             } catch (\Exception $Exception) {
                 Log::addError(
                     'Could not evaluate cron expression "' . $cronExpression . '" for cron'
@@ -396,12 +383,6 @@ class Manager
                     . ' Error :: ' . $Exception->getMessage()
                 );
 
-                continue;
-            }
-
-            // no execute
-            if ($next > $time) {
-                self::$runtime['finished']++;
                 continue;
             }
 
@@ -440,6 +421,59 @@ class Manager
                 Log::writeDebugException($Exception);
             }
         }
+    }
+
+    /**
+     * Return the cron expression for a cron entry.
+     *
+     * @param array<string, mixed> $entry
+     */
+    protected function getCronExpression(array $entry): string
+    {
+        $dayOfWeek = '*';
+
+        if (isset($entry['dayOfWeek'])) {
+            $dayOfWeek = $entry['dayOfWeek'];
+        }
+
+        return "{$entry['min']} {$entry['hour']} {$entry['day']} {$entry['month']} {$dayOfWeek}";
+    }
+
+    /**
+     * Check whether a cron entry should be executed at the current time.
+     *
+     * @param array<string, mixed> $entry
+     * @throws DateMalformedStringException
+     */
+    protected function shouldExecuteCron(
+        array $entry,
+        ?DateTimeInterface $currentTime = null
+    ): bool {
+        $currentTime = $currentTime
+            ? DateTimeImmutable::createFromInterface($currentTime)
+            : new DateTimeImmutable();
+
+        $cronExpression = new CronExpression($this->getCronExpression($entry));
+
+        if (!$cronExpression->isDue($currentTime)) {
+            return false;
+        }
+
+        // Prevent running the cron multiple times within the same minute.
+        if (empty($entry['lastexec'])) {
+            return true;
+        }
+
+        $lastExec = $entry['lastexec'] instanceof DateTimeInterface
+            ? DateTimeImmutable::createFromInterface($entry['lastexec'])
+            : new DateTimeImmutable((string)$entry['lastexec']);
+
+        $currentMinute = $currentTime->setTime(
+            (int)$currentTime->format('H'),
+            (int)$currentTime->format('i'),
+        );
+
+        return $lastExec < $currentMinute;
     }
 
     /**
