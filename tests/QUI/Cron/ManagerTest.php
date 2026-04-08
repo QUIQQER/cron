@@ -3,20 +3,33 @@
 namespace QUITests\Cron;
 
 use DateTimeImmutable;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use QUI\Cron\Manager;
 
 class ManagerTest extends TestCase
 {
-    private function createManager(): Manager
+    private function createManager(DateTimeImmutable $currentTime): Manager
     {
-        return new class () extends Manager {
+        return new class ($currentTime) extends Manager {
+            protected DateTimeImmutable $currentTime;
+
+            public function __construct(DateTimeImmutable $currentTime)
+            {
+                $this->currentTime = $currentTime;
+            }
+
+            protected function getCurrentDateTime(): DateTimeImmutable
+            {
+                return $this->currentTime;
+            }
+
             /**
              * @param array<string, mixed> $entry
              */
-            public function isCronDue(array $entry, DateTimeImmutable $currentTime): bool
+            public function isCronDue(array $entry, ?DateTimeImmutable $lastExecutionDate = null): bool
             {
-                return $this->shouldExecuteCron($entry, $currentTime);
+                return $this->shouldExecuteCron($entry, $lastExecutionDate);
             }
         };
     }
@@ -38,22 +51,50 @@ class ManagerTest extends TestCase
         ];
     }
 
-    public function testCronWithoutLastExecutionDoesNotRunBeforeScheduledMinute(): void
+    #[Test]
+    public function cronWithoutLastExecutionDoesNotRunBeforeScheduledMinute(): void
     {
-        $Manager = $this->createManager();
+        $Manager = $this->createManager(
+            new DateTimeImmutable('2025-06-30 16:26:00')
+        );
+        $entry = $this->createEntry();
+
+        $this->assertFalse($Manager->isCronDue($entry));
+    }
+
+    #[Test]
+    public function cronWithoutLastExecutionRunsAtScheduledMinute(): void
+    {
+        $Manager = $this->createManager(
+            new DateTimeImmutable('2025-06-30 22:00:00')
+        );
+        $entry = $this->createEntry();
+
+        $this->assertTrue($Manager->isCronDue($entry));
+    }
+
+    #[Test]
+    public function cronWithLastExecutionDoesNotRunBeforeNextScheduledMinute(): void
+    {
+        $Manager = $this->createManager(
+            new DateTimeImmutable('2025-07-01 21:55:00')
+        );
         $entry = $this->createEntry();
 
         $this->assertFalse(
             $Manager->isCronDue(
                 $entry,
-                new DateTimeImmutable('2025-06-30 16:26:00')
+                new DateTimeImmutable('2025-06-30 22:00:00')
             )
         );
     }
 
-    public function testCronWithoutLastExecutionRunsAtScheduledMinute(): void
+    #[Test]
+    public function cronWithLastExecutionRunsIfScheduledMinuteWasMissed(): void
     {
-        $Manager = $this->createManager();
+        $Manager = $this->createManager(
+            new DateTimeImmutable('2025-07-01 22:03:00')
+        );
         $entry = $this->createEntry();
 
         $this->assertTrue(
@@ -64,16 +105,18 @@ class ManagerTest extends TestCase
         );
     }
 
-    public function testCronDoesNotRunTwiceWithinSameMinute(): void
+    #[Test]
+    public function cronWithLastExecutionDoesNotRunTwiceForSameSchedule(): void
     {
-        $Manager = $this->createManager();
+        $Manager = $this->createManager(
+            new DateTimeImmutable('2025-07-01 22:03:00')
+        );
         $entry = $this->createEntry();
-        $entry['lastexec'] = '2025-06-30 22:00:05';
 
         $this->assertFalse(
             $Manager->isCronDue(
                 $entry,
-                new DateTimeImmutable('2025-06-30 22:00:45')
+                new DateTimeImmutable('2025-07-01 22:00:00')
             )
         );
     }
