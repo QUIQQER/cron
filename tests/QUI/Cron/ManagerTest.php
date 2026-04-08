@@ -27,7 +27,7 @@ class ManagerTest extends TestCase
             /**
              * @param array<string, mixed> $entry
              */
-            public function isCronDue(array $entry, ?DateTimeImmutable $lastExecutionDate = null): bool
+            public function isCronDue(array $entry, DateTimeImmutable $lastExecutionDate): bool
             {
                 return $this->shouldExecuteCron($entry, $lastExecutionDate);
             }
@@ -47,6 +47,7 @@ class ManagerTest extends TestCase
             'day' => '*',
             'month' => '*',
             'dayOfWeek' => '*',
+            'createDate' => '2025-06-30 15:00:00',
             'lastexec' => null
         ];
     }
@@ -59,7 +60,12 @@ class ManagerTest extends TestCase
         );
         $entry = $this->createEntry();
 
-        $this->assertFalse($Manager->isCronDue($entry));
+        $this->assertFalse(
+            $Manager->isCronDue(
+                $entry,
+                new DateTimeImmutable($entry['createDate'])
+            )
+        );
     }
 
     #[Test]
@@ -70,7 +76,12 @@ class ManagerTest extends TestCase
         );
         $entry = $this->createEntry();
 
-        $this->assertTrue($Manager->isCronDue($entry));
+        $this->assertTrue(
+            $Manager->isCronDue(
+                $entry,
+                new DateTimeImmutable($entry['createDate'])
+            )
+        );
     }
 
     #[Test]

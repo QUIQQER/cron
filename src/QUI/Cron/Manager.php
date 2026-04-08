@@ -374,7 +374,7 @@ class Manager
             try {
                 $lastExecutionDate = !empty($entry['lastexec']) ?
                     new DateTimeImmutable($entry['lastexec']) :
-                    null;
+                    new DateTimeImmutable($entry['createDate']);
 
                 if (!$this->shouldExecuteCron($entry, $lastExecutionDate)) {
                     self::$runtime['finished']++;
@@ -452,20 +452,16 @@ class Manager
      * Check whether a cron entry should be executed at the current time.
      *
      * @param array<string, mixed> $entry
-     * @param DateTimeInterface|null $lastExecutionDate - If null, the current time is used
-     * @throws DateMalformedStringException
+     * @param DateTimeInterface $lastExecutionDate
+     * @return bool
+     * @throws \Exception
      */
     protected function shouldExecuteCron(
         array $entry,
-        ?DateTimeInterface $lastExecutionDate = null
+        DateTimeInterface $lastExecutionDate
     ): bool {
         $cronExpression = new CronExpression($this->getCronExpression($entry));
         $currentDateTime = $this->getCurrentDateTime();
-
-        // If cron was never executed -> check next execution date
-        if ($lastExecutionDate === null) {
-            return $cronExpression->isDue($currentDateTime);
-        }
 
         $lastExecutionDate = DateTimeImmutable::createFromInterface($lastExecutionDate);
         $nextExecutionDate = DateTimeImmutable::createFromMutable(
