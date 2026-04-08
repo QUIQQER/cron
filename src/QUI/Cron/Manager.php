@@ -372,7 +372,11 @@ class Manager
             $cronExpression = $this->getCronExpression($entry);
 
             try {
-                if (!$this->shouldExecuteCron($entry)) {
+                $lastExecutionDate = !empty($entry['lastexec']) ?
+                    new DateTimeImmutable($entry['lastexec']) :
+                    new DateTimeImmutable($entry['createDate']);
+
+                if (!$this->shouldExecuteCron($entry, $lastExecutionDate)) {
                     self::$runtime['finished']++;
                     continue;
                 }
@@ -439,41 +443,32 @@ class Manager
         return "{$entry['min']} {$entry['hour']} {$entry['day']} {$entry['month']} {$dayOfWeek}";
     }
 
+    protected function getCurrentDateTime(): DateTimeImmutable
+    {
+        return new DateTimeImmutable();
+    }
+
     /**
      * Check whether a cron entry should be executed at the current time.
      *
      * @param array<string, mixed> $entry
-     * @throws DateMalformedStringException
+     * @param DateTimeInterface $lastExecutionDate
+     * @return bool
+     * @throws \Exception
      */
     protected function shouldExecuteCron(
         array $entry,
-        ?DateTimeInterface $currentTime = null
+        DateTimeInterface $lastExecutionDate
     ): bool {
-        $currentTime = $currentTime
-            ? DateTimeImmutable::createFromInterface($currentTime)
-            : new DateTimeImmutable();
-
         $cronExpression = new CronExpression($this->getCronExpression($entry));
+        $currentDateTime = $this->getCurrentDateTime();
 
-        if (!$cronExpression->isDue($currentTime)) {
-            return false;
-        }
-
-        // Prevent running the cron multiple times within the same minute.
-        if (empty($entry['lastexec'])) {
-            return true;
-        }
-
-        $lastExec = $entry['lastexec'] instanceof DateTimeInterface
-            ? DateTimeImmutable::createFromInterface($entry['lastexec'])
-            : new DateTimeImmutable((string)$entry['lastexec']);
-
-        $currentMinute = $currentTime->setTime(
-            (int)$currentTime->format('H'),
-            (int)$currentTime->format('i'),
+        $lastExecutionDate = DateTimeImmutable::createFromInterface($lastExecutionDate);
+        $nextExecutionDate = DateTimeImmutable::createFromMutable(
+            $cronExpression->getNextRunDate($lastExecutionDate)
         );
 
-        return $lastExec < $currentMinute;
+        return $nextExecutionDate <= $currentDateTime;
     }
 
     /**
