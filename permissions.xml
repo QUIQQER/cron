@@ -1,23 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <permissions>
-
     <permission name="quiqqer.cron.execute" type="bool">
-        <defaultvalue>1</defaultvalue>
+        <defaultvalue>0</defaultvalue>
+        <rootPermission>1</rootPermission>
+        <everyonePermission>0</everyonePermission>
+        <guestPermission>0</guestPermission>
     </permission>
     <permission name="quiqqer.cron.add" type="bool">
-        <defaultvalue>1</defaultvalue>
+        <defaultvalue>0</defaultvalue>
+        <rootPermission>1</rootPermission>
+        <everyonePermission>0</everyonePermission>
+        <guestPermission>0</guestPermission>
     </permission>
     <permission name="quiqqer.cron.edit" type="bool">
-        <defaultvalue>1</defaultvalue>
+        <defaultvalue>0</defaultvalue>
+        <rootPermission>1</rootPermission>
+        <everyonePermission>0</everyonePermission>
+        <guestPermission>0</guestPermission>
     </permission>
     <permission name="quiqqer.cron.delete" type="bool">
-        <defaultvalue>1</defaultvalue>
+        <defaultvalue>0</defaultvalue>
+        <rootPermission>1</rootPermission>
+        <everyonePermission>0</everyonePermission>
+        <guestPermission>0</guestPermission>
     </permission>
     <permission name="quiqqer.cron.activate" type="bool">
-        <defaultvalue>1</defaultvalue>
+        <defaultvalue>0</defaultvalue>
+        <rootPermission>1</rootPermission>
+        <everyonePermission>0</everyonePermission>
+        <guestPermission>0</guestPermission>
     </permission>
     <permission name="quiqqer.cron.deactivate" type="bool">
-        <defaultvalue>1</defaultvalue>
+        <defaultvalue>0</defaultvalue>
+        <rootPermission>1</rootPermission>
+        <everyonePermission>0</everyonePermission>
+        <guestPermission>0</guestPermission>
     </permission>
-
 </permissions>
