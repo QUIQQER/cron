@@ -129,7 +129,8 @@ class CronService
     public function getStatus(): mixed
     {
         $status = $this->makeServerAjaxCall('package_pcsg_cronservice_ajax_getStatus', [
-            'domain' => $this->domain
+            'domain' => $this->domain,
+            'token' => $this->getRevokeTokenForStatus()
         ]);
 
         if (empty($status['last_execution'])) {
@@ -200,7 +201,8 @@ class CronService
         $this->makeServerAjaxCall(
             "package_pcsg_cronservice_ajax_resendActivationMail",
             [
-                "domain" => $this->domain
+                "domain" => $this->domain,
+                "token" => $this->readRevokeToken()
             ]
         );
     }
@@ -220,7 +222,8 @@ class CronService
         $this->makeServerAjaxCall(
             "package_pcsg_cronservice_ajax_cancelRegistration",
             [
-                "domain" => $this->domain
+                "domain" => $this->domain,
+                "token" => $this->readRevokeToken()
             ]
         );
 
@@ -408,5 +411,17 @@ class CronService
         }
 
         return $token;
+    }
+
+    private function getRevokeTokenForStatus(): string
+    {
+        $varDir = QUI::getPackage('quiqqer/cron')->getVarDir() . '/cronservice';
+        $fileName = $varDir . '/.revoketoken';
+
+        if (!file_exists($fileName)) {
+            return '';
+        }
+
+        return $this->readRevokeToken();
     }
 }

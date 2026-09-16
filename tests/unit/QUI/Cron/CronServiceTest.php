@@ -323,16 +323,20 @@ class CronServiceTest extends TestCase
             $function => [
                 'result' => [
                     'status' => 1,
-                    'last_execution' => ''
+                    'last_execution' => '',
+                    'email' => 'admin@example.test'
                 ]
             ]
         ]);
+        $this->replacePackageDirectory($this->temporaryDirectory);
         $Service = $this->createServiceWithoutConstructor('example.test', '/packages/');
+        $this->invokePrivate($Service, 'saveRevokeToken', ['local-revoke-token']);
 
         $status = $Service->getStatus();
 
         self::assertIsArray($status);
         self::assertSame(1, $status['status']);
+        self::assertSame('admin@example.test', $status['email']);
         self::assertNotSame('', $status['last_execution']);
         self::assertArrayHasKey('last_local_execution', $status);
     }
