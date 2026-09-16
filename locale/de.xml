@@ -632,6 +632,9 @@ Dies kann besonders bei Shared-Hosting von großem Nutzen sein.]]></de>
         <locale name="cron.window.cronservice.content.register.lbl.stats.status">
 <de><![CDATA[Status: ]]></de>
         </locale>
+        <locale name="cron.window.cronservice.content.register.lbl.stats.email">
+<de><![CDATA[E-Mail: ]]></de>
+        </locale>
         <locale name="cron.window.cronservice.content.register.lbl.stats.errors">
 <de><![CDATA[Aufgetretene Fehler: ]]></de>
         </locale>

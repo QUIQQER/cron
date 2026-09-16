@@ -588,6 +588,9 @@
         <locale name="cron.window.cronservice.content.register.lbl.stats.status">
 <it><![CDATA[Stato: ]]></it>
         </locale>
+        <locale name="cron.window.cronservice.content.register.lbl.stats.email">
+<it><![CDATA[E-mail: ]]></it>
+        </locale>
         <locale name="cron.window.cronservice.content.register.lbl.stats.errors">
 <it><![CDATA[Numero di errori: ]]></it>
         </locale>
