@@ -667,7 +667,7 @@ Dies kann besonders bei Shared-Hosting von großem Nutzen sein.]]></de>
 <de><![CDATA[Registrierung abbrechen]]></de>
         </locale>
         <locale name="cron.window.cronservice.content.status.unavailable">
-<de><![CDATA[Der Cronservice ist momentan nicht verfügbar.]]></de>
+<de><![CDATA[Der QUIQQER Cronservice ist z.Z. nicht verfügbar. Bitte versuchen Sie es später noch einmal oder wenden Sie sich an support@pcsg.de]]></de>
         </locale>
         <locale name="cron.window.cronservice.content.button.message.sent.success">
 <de><![CDATA[Nachricht versendet.]]></de>

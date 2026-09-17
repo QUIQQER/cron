@@ -56,11 +56,55 @@ class EventHandler
     protected static function checkCronTable(): void
     {
         try {
+            $historyTable = Manager::tableHistory();
+
+            if (self::migrateLegacyCronHistoryPrimaryKey($historyTable)) {
+                QUI\Update::importDatabase(OPT_DIR . 'quiqqer/cron/database.xml');
+            }
+
             self::ensureStringColumnLength(Manager::table(), 'title', 1000);
-            self::ensureStringColumnLength(Manager::tableHistory(), 'uid', 50);
+            self::ensureStringColumnLength($historyTable, 'uid', 50);
         } catch (\Doctrine\DBAL\Exception $Exception) {
             QUI\System\Log::writeDebugException($Exception);
         }
+    }
+
+    /**
+     * @throws \Doctrine\DBAL\Exception
+     */
+    private static function migrateLegacyCronHistoryPrimaryKey(string $tableName): bool
+    {
+        $table = QUI::getSchemaManager()->introspectTable($tableName);
+        $primaryKey = $table->getPrimaryKeyConstraint();
+        $primaryColumns = array_map(
+            static fn($columnName): string => $columnName->getIdentifier()->getValue(),
+            $primaryKey?->getColumnNames() ?? []
+        );
+
+        if ($primaryColumns !== ['cronid', 'lastexec']) {
+            return false;
+        }
+
+        $quotedTable = QUI\Utils\Doctrine::quoteIdentifier($tableName);
+        $quotedId = QUI\Utils\Doctrine::quoteIdentifier('id');
+        $idColumnDefinition = "ADD COLUMN $quotedId INT NOT NULL AUTO_INCREMENT FIRST";
+
+        if ($table->hasColumn('id')) {
+            if (!$table->getColumn('id')->getType() instanceof \Doctrine\DBAL\Types\IntegerType) {
+                return false;
+            }
+
+            $idColumnDefinition = "MODIFY COLUMN $quotedId INT NOT NULL AUTO_INCREMENT";
+        }
+
+        QUI::getDataBaseConnection()->executeStatement(
+            "ALTER TABLE $quotedTable
+                DROP PRIMARY KEY,
+                $idColumnDefinition,
+                ADD PRIMARY KEY ($quotedId)"
+        );
+
+        return true;
     }
 
 

@@ -214,6 +214,13 @@ define('package/quiqqer/cron/bin/CronServiceWindow', [
             }, {
                 'package': lg,
                 'onError': function () {
+                    Content.set('html', '');
+
+                    new Element('div', {
+                        'class': 'quiqqer-cron-cronservicewindow-registration-error',
+                        text: QUILocale.get(lg, 'cron.window.cronservice.content.status.unavailable')
+                    }).inject(Content);
+
                     self.Loader.hide();
                 }
             });
