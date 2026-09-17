@@ -35,8 +35,8 @@ define('package/quiqqer/cron/bin/CronServiceWindow', [
         options: {
             title: QUILocale.get(lg, 'cron.window.cronservice.title'),
             icon: 'fa fa-cloud',
-            maxWidth: 400,
-            maxHeight: 650,
+            maxWidth: 420,
+            maxHeight: 675,
             autoclose: false,
             buttons: false
         },
