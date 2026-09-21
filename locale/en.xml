@@ -668,7 +668,7 @@ This is realized with an external server on which QUIQQER systems can register t
 <en><![CDATA[Cancel registration]]></en>
         </locale>
         <locale name="cron.window.cronservice.content.status.unavailable">
-<en><![CDATA[The cronservice is currently not available.]]></en>
+<en><![CDATA[The QUIQQER cron service is currently unavailable. Please try again later or contact support@pcsg.de]]></en>
         </locale>
         <locale name="cron.window.cronservice.content.button.message.sent.success">
 <en><![CDATA[Message sent]]></en>
