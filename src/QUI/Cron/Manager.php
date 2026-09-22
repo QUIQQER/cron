@@ -16,6 +16,8 @@ use QUI;
 use QUI\Database\Exception;
 use QUI\Permissions\Permission;
 use QUI\System\Log;
+use Symfony\Component\Lock\LockInterface;
+use Throwable;
 
 use function array_filter;
 use function array_key_exists;
@@ -24,7 +26,6 @@ use function boolval;
 use function count;
 use function date;
 use function date_create;
-use function date_interval_create_from_date_string;
 use function explode;
 use function is_callable;
 use function is_null;
@@ -87,6 +88,14 @@ class Manager
     protected static bool $lockTimeoutNotificationSent = false;
 
     protected bool $stopExecutionAfterCurrentCron = false;
+
+    private int $scheduledCount = 0;
+    private int $executedCount = 0;
+    private int $failedCount = 0;
+    private bool $executionInterrupted = false;
+    private bool $lastCronFailed = false;
+    private ?Throwable $executionFailure = null;
+    private bool $runningCycle = false;
 
     /**
      * @var array<string, bool>|null
@@ -307,97 +316,177 @@ class Manager
     /**
      * Execute all upcoming cron jobs
      *
-     * @param bool $force - force execution
+     * @param bool $force Retained for compatibility; active process locks are never bypassed.
      * @throws QUI\Permissions\Exception|Exception
      */
     public function execute(bool $force = false): void
     {
-        Manager::log('Start cron execution (all crons)');
+        // Keep the public signature; force no longer bypasses an active process lock.
+        $Result = $this->executeWithResult();
 
-        $this->stopExecutionAfterCurrentCron = false;
+        if ($Result->status === 'execution_failed' && $this->executionFailure !== null) {
+            throw $this->executionFailure;
+        }
+    }
 
-        if ($this->isSystemUpdateRunning()) {
-            Manager::log('Crons cannot be executed because a system update is running.');
-            return;
+    /**
+     * Run a complete cycle using the version-1 execution contract.
+     * Timeout bounds lock contention, not execution time or backend I/O.
+     */
+    public function executeWithResult(string $lockMode = 'skip', float $lockTimeout = 300): ExecutionResult
+    {
+        if (!in_array($lockMode, ['skip', 'wait'], true) || !is_finite($lockTimeout) || $lockTimeout < 0) {
+            return new ExecutionResult('invalid_arguments');
         }
 
-        // locking
-        $lockKey = self::EXECUTION_LOCK_KEY;
-
-        $Package = null;
-        $Start = date_create();
-
-        if ($Start === false) {
-            $Start = new DateTime();
+        if ($this->runningCycle) {
+            return new ExecutionResult('already_running');
         }
 
-        $EndTime = clone $Start;
+        $this->runningCycle = true;
+        $this->scheduledCount = $this->executedCount = $this->failedCount = 0;
+        $this->stopExecutionAfterCurrentCron = $this->executionInterrupted = false;
+        $this->executionFailure = null;
 
-        self::$runtime['startAll'] = $Start->format('Y-m-d H:i:s');
-
-        if ($force === false) {
-            try {
-                $Package = QUI::getPackage('quiqqer/cron');
-
-                if (QUI\Lock\Locker::isLocked($Package, $lockKey, null, false)) {
-                    $time = QUI\Lock\Locker::getLockTime($Package, $lockKey);
-
-                    if ($time < 0) {
-                        Manager::log(
-                            'Crons cannot be executed because another instance is already executing crons.'
-                        );
-
-                        return;
-                    }
-                }
-
-                $lockTime = self::getLockTime(); // lock time in seconds
-                $Interval = date_interval_create_from_date_string($lockTime . ' seconds');
-
-                if ($Interval === false) {
-                    throw new QUI\Exception('Could not create lock timeout interval.');
-                }
-
-                $EndTime = $EndTime->add($Interval);
-
-                self::$runtime['lockEnd'] = $EndTime->format('Y-m-d H:i:s');
-
-                QUI\Lock\Locker::lock($Package, $lockKey, $lockTime);
-            } catch (\Exception $Exception) {
-                Log::writeDebugException($Exception);
-                Log::writeRecursive($Exception->getMessage());
-
-                Manager::log(
-                    'Crons cannot be executed due to an error: ' . $Exception->getMessage()
-                );
-
-                return;
-            }
-        }
+        $Lock = null;
+        $ownsLock = false;
+        $legacyMarker = false;
+        $started = false;
+        $status = 'execution_failed';
+        $phase = 'execution_failed';
 
         try {
-            Permission::checkPermission('quiqqer.cron.execute');
+            Manager::log('Start cron execution (all crons)');
 
-            $list = $this->getList();
+            if ($this->isSystemUpdateRunning()) {
+                return new ExecutionResult('system_update_running');
+            }
 
-            $activeList = array_filter($list, function ($entry) {
-                return $entry['active'] == 1;
-            });
+            $phase = 'lock_failed';
+            $Lock = $this->createExecutionLock();
+            $deadline = hrtime(true) / 1e9 + $lockTimeout;
 
-            self::$runtime['total'] = count($activeList);
+            while (true) {
+                if ($Lock->acquire()) {
+                    $ownsLock = true;
 
-            $this->executeCronList($activeList, $EndTime);
+                    // Respect pre-upgrade runs and retain the marker read by Core's cron command.
+                    if (!$this->isLegacyExecutionLocked()) {
+                        break;
+                    }
 
-            Manager::log('Finish cron execution (all crons)');
-        } finally {
-            if (!$force) {
-                try {
-                    self::unlockExecutionLock();
-                } catch (\Exception $Exception) {
-                    Log::writeDebugException($Exception);
+                    $Lock->release();
+                    $ownsLock = false;
+                }
+
+                if ($lockMode === 'skip') {
+                    return new ExecutionResult('already_running');
+                }
+
+                $remaining = $deadline - hrtime(true) / 1e9;
+
+                if ($remaining <= 0) {
+                    return new ExecutionResult('lock_timeout');
+                }
+
+                usleep((int)min(50000, ceil($remaining * 1e6)));
+
+                if (hrtime(true) / 1e9 >= $deadline) {
+                    return new ExecutionResult('lock_timeout');
                 }
             }
+
+            $phase = 'execution_failed';
+
+            // An update may have started while we waited for the lock.
+            if ($this->isSystemUpdateRunning()) {
+                $status = 'system_update_running';
+            } else {
+                $this->checkExecutionPermission();
+                self::$runtime = [
+                    'currentCronTitle' => '', 'currentCronId' => 0, 'finished' => 0, 'total' => 0,
+                    'startAll' => false, 'startCurrent' => false, 'lockEnd' => false
+                ];
+                self::$lockTimeoutNotificationSent = false;
+                $Start = new DateTime();
+                $lockTime = max(1, self::getLockTime());
+                $EndTime = $Start->modify('+' . $lockTime . ' seconds');
+                self::$runtime['startAll'] = $Start->format('Y-m-d H:i:s');
+                self::$runtime['lockEnd'] = $EndTime->format('Y-m-d H:i:s');
+
+                $phase = 'lock_failed';
+                $legacyMarker = true;
+                $this->setLegacyExecutionLock($lockTime);
+                $phase = 'execution_failed';
+
+                $activeList = array_filter($this->getList(), static fn($entry) => $entry['active'] == 1);
+                self::$runtime['total'] = count($activeList);
+                $started = true;
+                $this->executeCronList($activeList, $EndTime);
+                $status = $this->executionInterrupted ? 'execution_interrupted' :
+                    ($this->failedCount > 0 ? 'completed_with_errors' : 'executed');
+                Manager::log('Finish cron execution (all crons)');
+            }
+        } catch (Throwable $Error) {
+            $this->executionFailure = $Error;
+            $status = $phase;
+            // Do not expose exception messages or cron parameters in the public contract.
+            Log::addError('Cron cycle failed: ' . $status);
+        } finally {
+            if ($ownsLock) {
+                try {
+                    if ($legacyMarker) {
+                        $this->clearLegacyExecutionLock();
+                    }
+                } catch (Throwable) {
+                    $status = 'lock_failed';
+                } finally {
+                    try {
+                        $Lock?->release();
+                    } catch (Throwable) {
+                        $status = 'lock_failed';
+                    }
+                }
+            }
+
+            $this->runningCycle = false;
         }
+
+        return new ExecutionResult(
+            $status,
+            $this->scheduledCount,
+            $this->executedCount,
+            $this->scheduledCount - $this->executedCount - $this->failedCount,
+            $this->failedCount,
+            $started
+        );
+    }
+
+    protected function createExecutionLock(): LockInterface
+    {
+        return ExecutionLock::create();
+    }
+
+    protected function checkExecutionPermission(): void
+    {
+        Permission::checkPermission('quiqqer.cron.execute');
+    }
+
+    protected function isLegacyExecutionLocked(): bool
+    {
+        $Package = QUI::getPackage('quiqqer/cron');
+
+        return (bool)QUI\Lock\Locker::isLocked($Package, self::EXECUTION_LOCK_KEY, null, false);
+    }
+
+    protected function setLegacyExecutionLock(int $seconds): void
+    {
+        QUI\Lock\Locker::lock(QUI::getPackage('quiqqer/cron'), self::EXECUTION_LOCK_KEY, $seconds);
+    }
+
+    protected function clearLegacyExecutionLock(): void
+    {
+        QUI\Lock\Locker::unlock(QUI::getPackage('quiqqer/cron'), self::EXECUTION_LOCK_KEY);
     }
 
     /**
@@ -406,68 +495,59 @@ class Manager
     protected function executeCronList(array $activeList, DateTimeInterface $EndTime): void
     {
         foreach ($activeList as $entry) {
-            if ($this->shouldStopExecution()) {
-                Manager::log('Remaining crons are skipped because a system update is running or was started.');
-                break;
-            }
-
-            if (!$this->canExecuteCron($entry)) {
-                self::$runtime['finished']++;
-                Manager::log(
-                    'SKIP CLI-only cron "' . $entry['title'] . '" (ID: ' . $entry['id'] . ')'
-                );
-                continue;
-            }
-
-            $cronExpression = $this->getCronExpression($entry);
-
             try {
                 $lastExecutionDate = !empty($entry['lastexec']) ?
-                    new DateTimeImmutable($entry['lastexec']) :
-                    new DateTimeImmutable($entry['createDate']);
+                    new DateTimeImmutable($entry['lastexec']) : new DateTimeImmutable($entry['createDate']);
 
                 if (!$this->shouldExecuteCron($entry, $lastExecutionDate)) {
                     self::$runtime['finished']++;
                     continue;
                 }
-            } catch (\Exception $Exception) {
-                Log::addError(
-                    'Could not evaluate cron expression "' . $cronExpression . '" for cron'
-                    . ' (Cron "' . $entry['title'] . '" #' . $entry['id'] . ').'
-                    . ' Error :: ' . $Exception->getMessage()
-                );
-
+            } catch (Throwable) {
+                // A schedule that cannot be evaluated is a failed candidate, never a successful run.
+                $this->scheduledCount++;
+                $this->failedCount++;
+                self::$runtime['finished']++;
+                Log::addError('Could not evaluate cron schedule (ID: ' . $entry['id'] . ').');
                 continue;
             }
 
-            // execute cron
+            $this->scheduledCount++;
+
+            if ($this->executionInterrupted || $this->shouldStopExecution()) {
+                $this->executionInterrupted = true;
+                continue;
+            }
+
+            if (!$this->canExecuteCron($entry)) {
+                self::$runtime['finished']++;
+                Manager::log('SKIP CLI-only cron (ID: ' . $entry['id'] . ')');
+                continue;
+            }
+
             try {
                 self::$runtime['startCurrent'] = date('Y-m-d H:i:s');
                 self::$runtime['currentCronId'] = $entry['id'];
                 self::$runtime['currentCronTitle'] = $entry['title'];
-
+                $this->lastCronFailed = false;
                 $this->executeCron($entry['id']);
 
-                self::$runtime['finished']++;
-
-                $Now = date_create();
-
-                if ($Now > $EndTime) {
-                    self::sendCronLockTimeoutNotification();
+                if ($this->lastCronFailed) {
+                    $this->failedCount++;
+                } else {
+                    $this->executedCount++;
                 }
-            } catch (\Exception $Exception) {
-                $message = print_r($entry, true);
-                $message .= "\n" . $Exception->getMessage();
-
+            } catch (Throwable) {
+                $this->failedCount++;
+                $message = 'Cron execution failed (ID: ' . $entry['id'] . ').';
                 Log::addError($message);
-
-                #self::log($message);
                 QUI::getMessagesHandler()->addError($message);
             }
 
-            if ($this->stopExecutionAfterCurrentCron) {
-                Manager::log('Remaining crons are skipped because the current cron started a system update.');
-                break;
+            self::$runtime['finished']++;
+
+            if (new DateTimeImmutable() > $EndTime) {
+                self::sendCronLockTimeoutNotification();
             }
         }
     }
@@ -486,17 +566,13 @@ class Manager
         return $this->isSystemUpdateRunning();
     }
 
+    /** @phpstan-impure Reads update state changed by other processes. */
     protected function isSystemUpdateRunning(): bool
     {
-        try {
-            $Repository = new QUI\System\Update\RunRepository(VAR_DIR . 'update/runs/');
-            $runs = $Repository->cleanupAndFindActive(time(), 86400);
+        $Repository = new QUI\System\Update\RunRepository(VAR_DIR . 'update/runs/');
+        $runs = $Repository->cleanupAndFindActive(time(), 86400);
 
-            return count($runs['active']) > 0;
-        } catch (\Throwable $Throwable) {
-            Log::writeDebugException($Throwable);
-            return false;
-        }
+        return count($runs['active']) > 0;
     }
 
     /**
@@ -550,15 +626,24 @@ class Manager
      */
     public static function unlockExecutionLock(): void
     {
-        $Package = QUI::getPackage('quiqqer/cron');
+        $Lock = ExecutionLock::create();
 
-        QUI\Lock\Locker::unlock($Package, self::EXECUTION_LOCK_KEY);
+        if (!$Lock->acquire()) {
+            throw new QUI\Exception('Cannot unlock an active cron cycle. Wait for its owner to finish.');
+        }
+
+        try {
+            QUI\Lock\Locker::unlock(QUI::getPackage('quiqqer/cron'), self::EXECUTION_LOCK_KEY);
+        } finally {
+            $Lock->release();
+        }
     }
 
     /**
      * Execute a cron
      *
      * @throws QUI\Exception
+     * @phpstan-impure Executes callbacks and mutates execution state.
      */
     public function executeCron(int $cronId): static
     {
@@ -594,6 +679,7 @@ class Manager
         $starTime = time();
 
         if (!is_callable($cronData['exec'])) {
+            $this->lastCronFailed = true;
             Log::addError('Cron is not callable "' . $cronData['title'] . '" (ID: ' . $cronId . ')');
             return $this;
         }
