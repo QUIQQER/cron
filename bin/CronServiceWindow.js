@@ -35,8 +35,8 @@ define('package/quiqqer/cron/bin/CronServiceWindow', [
         options: {
             title: QUILocale.get(lg, 'cron.window.cronservice.title'),
             icon: 'fa fa-cloud',
-            maxWidth: 400,
-            maxHeight: 650,
+            maxWidth: 420,
+            maxHeight: 675,
             autoclose: false,
             buttons: false
         },
@@ -92,11 +92,13 @@ define('package/quiqqer/cron/bin/CronServiceWindow', [
                     cron_window_cronservice_content_btn_unregister: QUILocale.get(lg, 'cron.window.cronservice.content.register.btn.unregister'),
                     cron_window_cronservice_content_btn_register: QUILocale.get(lg, 'cron.window.cronservice.content.btn.register'),
                     cron_window_cronservice_content_register_lbl_stats_status: QUILocale.get(lg, 'cron.window.cronservice.content.register.lbl.stats.status'),
+                    cron_window_cronservice_content_register_lbl_stats_email: QUILocale.get(lg, 'cron.window.cronservice.content.register.lbl.stats.email'),
                     cron_window_cronservice_content_register_lbl_stats_errors: QUILocale.get(lg, 'cron.window.cronservice.content.register.lbl.stats.errors'),
                     cron_window_cronservice_content_register_lbl_stats_lastExecution: QUILocale.get(lg, 'cron.window.cronservice.content.register.lbl.stats.lastExecution'),
                     cron_window_cronservice_content_register_lbl_stats_lastLocalExecution: QUILocale.get(lg, 'cron.window.cronservice.content.register.lbl.stats.lastLocalExecution'),
                     statusText: statusText,
                     status: status.status,
+                    statusEmail: status.email,
                     statusErrors: status.current_failures, //== 0 ? "0": status['errors'].toString(),
                     statusLastExecution: status.last_execution,
                     statusLastLocalExecution: status.last_local_execution,
@@ -212,6 +214,13 @@ define('package/quiqqer/cron/bin/CronServiceWindow', [
             }, {
                 'package': lg,
                 'onError': function () {
+                    Content.set('html', '');
+
+                    new Element('div', {
+                        'class': 'quiqqer-cron-cronservicewindow-registration-error',
+                        text: QUILocale.get(lg, 'cron.window.cronservice.content.status.unavailable')
+                    }).inject(Content);
+
                     self.Loader.hide();
                 }
             });

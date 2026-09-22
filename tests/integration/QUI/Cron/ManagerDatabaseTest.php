@@ -12,11 +12,13 @@ use QUITests\Integration\Cron\Fixtures\DatabaseManager;
 use QUITests\Integration\Cron\Fixtures\DisappearingDefinitionManager;
 use QUITests\Integration\Cron\Fixtures\ExecutableCron;
 use QUITests\Integration\Cron\Fixtures\ExecutionManager;
+use QUITests\Integration\Cron\Fixtures\IsolatedCycleManager;
 
 require_once __DIR__ . '/Fixtures/DatabaseManager.php';
 require_once __DIR__ . '/Fixtures/DisappearingDefinitionManager.php';
 require_once __DIR__ . '/Fixtures/ExecutableCron.php';
 require_once __DIR__ . '/Fixtures/ExecutionManager.php';
+require_once __DIR__ . '/Fixtures/IsolatedCycleManager.php';
 
 class ManagerDatabaseTest extends TestCase
 {
@@ -243,6 +245,47 @@ class ManagerDatabaseTest extends TestCase
 
         self::assertSame($Manager, $Manager->executeCron($this->cronId));
         self::assertSame(5, $this->countFixtureHistory());
+    }
+
+    #[Test]
+    public function completeCycleReportsRealCallbackAndHistoryThenResetsCounters(): void
+    {
+        $this->makeFixtureDue();
+        $Manager = new IsolatedCycleManager($this->cronId);
+        $Result = $Manager->executeWithResult();
+
+        self::assertSame('executed', $Result->status);
+        self::assertSame(1, $Result->executed);
+        self::assertSame(1, $Result->scheduled);
+        self::assertCount(1, ExecutableCron::$calls);
+        self::assertSame(6, $this->countFixtureHistory());
+
+        $Next = $Manager->executeWithResult();
+        self::assertSame('executed', $Next->status);
+        self::assertSame(0, $Next->scheduled);
+        self::assertSame(0, $Next->executed);
+    }
+
+    #[Test]
+    public function completeCycleCountsNonCallableCronAsFailed(): void
+    {
+        $this->makeFixtureDue();
+        $this->updateFixtureExec('not-a-callable');
+        $Result = (new IsolatedCycleManager($this->cronId))->executeWithResult();
+
+        self::assertSame('completed_with_errors', $Result->status);
+        self::assertSame(1, $Result->failed);
+        self::assertSame(0, $Result->executed);
+        self::assertSame(5, $this->countFixtureHistory());
+    }
+
+    private function makeFixtureDue(): void
+    {
+        QUI::getDataBaseConnection()->update(
+            QUI\Utils\Doctrine::quoteIdentifier(Manager::table()),
+            ['active' => 1, 'lastexec' => '2000-01-01 00:00:00'],
+            ['id' => $this->cronId]
+        );
     }
 
     #[Test]

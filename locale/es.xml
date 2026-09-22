@@ -588,6 +588,9 @@
         <locale name="cron.window.cronservice.content.register.lbl.stats.status">
 <es><![CDATA[Estado: ]]></es>
         </locale>
+        <locale name="cron.window.cronservice.content.register.lbl.stats.email">
+<es><![CDATA[Correo electrónico: ]]></es>
+        </locale>
         <locale name="cron.window.cronservice.content.register.lbl.stats.errors">
 <es><![CDATA[Número de errores: ]]></es>
         </locale>
@@ -620,7 +623,7 @@
 <es><![CDATA[Cancelar registro]]></es>
         </locale>
         <locale name="cron.window.cronservice.content.status.unavailable">
-<es><![CDATA[El servicio cron no está disponible en este momento.]]></es>
+<es><![CDATA[El servicio Cron de QUIQQER no está disponible en este momento. Vuelva a intentarlo más tarde o póngase en contacto con support@pcsg.de]]></es>
         </locale>
         <locale name="cron.window.cronservice.content.button.message.sent.success">
 <es><![CDATA[Mensaje enviado.]]></es>

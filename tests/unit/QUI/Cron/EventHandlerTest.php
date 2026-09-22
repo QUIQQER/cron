@@ -231,12 +231,18 @@ class EventHandlerTest extends TestCase
             ->introspectTable(Manager::table())
             ->getColumn('title')
             ->getLength();
-        $uidLength = $SchemaManager
-            ->introspectTable(Manager::tableHistory())
-            ->getColumn('uid')
-            ->getLength();
+        $historyTable = $SchemaManager->introspectTable(Manager::tableHistory());
+        $uidLength = $historyTable->getColumn('uid')->getLength();
+        $historyPrimaryKey = $historyTable->getPrimaryKeyConstraint();
+        $historyPrimaryColumns = array_map(
+            static fn($columnName): string => $columnName->getIdentifier()->getValue(),
+            $historyPrimaryKey?->getColumnNames() ?? []
+        );
+        $historyIdIsCurrent = $historyTable->hasColumn('id')
+            && $historyTable->getColumn('id')->getAutoincrement()
+            && $historyPrimaryColumns === ['id'];
 
-        if ($titleLength !== 1000 || $uidLength !== 50) {
+        if ($titleLength !== 1000 || $uidLength !== 50 || !$historyIdIsCurrent) {
             self::markTestSkipped('Cron schema is not current; the test must not alter production tables.');
         }
 
