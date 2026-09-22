@@ -17,6 +17,8 @@ class ExecCrons extends QUI\System\Console\Tool
     {
         $this->setName('package:cron')
             ->setDescription('Cron Manager');
+
+        $this->addExample('php packages/quiqqer/cron/bin/cron-run.php --json --lock-mode=skip');
     }
 
     /**
@@ -267,10 +269,12 @@ class ExecCrons extends QUI\System\Console\Tool
     {
         $this->writeLn('Remove cron execution lock ...');
         $Package = QUI::getPackage('quiqqer/cron');
+        $hadLegacyLock = (bool)QUI\Lock\Locker::isLocked($Package, QUI\Cron\Manager::EXECUTION_LOCK_KEY, null, false);
 
-        if (QUI\Lock\Locker::isLocked($Package, QUI\Cron\Manager::EXECUTION_LOCK_KEY, null, false)) {
-            QUI\Cron\Manager::unlockExecutionLock();
+        // Also refuse when the legacy cache marker has expired but the process still owns the lock.
+        QUI\Cron\Manager::unlockExecutionLock();
 
+        if ($hadLegacyLock) {
             $this->writeLn('Cron execution lock removed.', 'green');
             $this->resetColor();
             $this->writeLn();

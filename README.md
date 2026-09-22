@@ -42,6 +42,23 @@ Long-running crons can be restricted to command-line execution in `cron.xml`:
 If `cliOnly` is omitted or set to `false`, the cron remains available through
 both CLI and web execution.
 
+Machine-readable execution
+--------------------------
+
+From the QUIQQER installation directory:
+
+```sh
+php packages/quiqqer/cron/bin/cron-run.php --json --lock-mode=skip
+php packages/quiqqer/cron/bin/cron-run.php --json --lock-mode=wait --lock-timeout=300
+```
+
+This optional CLI entrypoint returns versioned JSON and stable exit codes. Existing
+CLI and HTTP callers keep their response behavior. Full cycles share a local process
+lock; `--force` and `--unlock` can no longer bypass a running cycle.
+
+See [the execution contract and migration notes](docs/cron-execution.md) for statuses,
+counters, locking scope, and compatibility details.
+
 
 Contribute
 ----------
