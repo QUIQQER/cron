@@ -34,6 +34,11 @@ class EventHandler
     {
         if ($Package->getName() === 'quiqqer/cron') {
             self::checkCronTable();
+            $Config = $Package->getConfig();
+
+            if ($Config !== null) {
+                (new UpdateSettings())->migrate($Config);
+            }
         }
 
         self::createAutoCreateCrons(null, true);
@@ -255,6 +260,14 @@ class EventHandler
      */
     public static function onPackageInstall(QUI\Package\Package $Package): void
     {
+        if ($Package->getName() === 'quiqqer/cron') {
+            $Config = $Package->getConfig();
+
+            if ($Config !== null) {
+                (new UpdateSettings())->migrate($Config);
+            }
+        }
+
         self::createAutoCreateCrons();
     }
 
@@ -285,6 +298,11 @@ class EventHandler
             $title = $cron['title'];
             $exec = $cron['exec'];
             $required = $cron['required'];
+
+            // UpdateSettings creates these jobs after preserving the legacy effective state.
+            if (in_array($exec, UpdateSettings::CRONS, true)) {
+                continue;
+            }
 
             if ($onlyRequired && $required === false) {
                 continue;

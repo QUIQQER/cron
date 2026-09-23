@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<quiqqer xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://www.quiqqer.com/docs/schemas/2.x/locale.xsd">
 <locales>
     <groups name="quiqqer/cron" datatype="php,js">
         <locale name="package.title">
@@ -27,6 +29,18 @@
         </locale>
         <locale name="message.cron.cli_only">
 <en><![CDATA[This cron can only be executed from the command line.]]></en>
+        </locale>
+        <locale name="settings.cron.security_update">
+            <en><![CDATA[Security and bug-fix updates]]></en>
+        </locale>
+        <locale name="settings.cron.security_update.description">
+            <en><![CDATA[Automatically installs patch updates with security fixes and bug fixes.]]></en>
+        </locale>
+        <locale name="exception.cron.system.delete">
+            <en><![CDATA[System crons cannot be deleted. You can deactivate them.]]></en>
+        </locale>
+        <locale name="exception.cron.system.change">
+            <en><![CDATA[The task of a system cron cannot be changed.]]></en>
         </locale>
     </groups>
     <groups name="quiqqer/cron" datatype="php">
@@ -709,3 +723,4 @@ This is realized with an external server on which QUIQQER systems can register t
         </locale>
     </groups>
 </locales>
+</quiqqer>

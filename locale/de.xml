@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<quiqqer xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://www.quiqqer.com/docs/schemas/2.x/locale.xsd">
 <locales>
     <groups name="quiqqer/cron" datatype="php,js">
         <locale name="package.title">
@@ -27,6 +29,18 @@
         </locale>
         <locale name="message.cron.cli_only">
 <de><![CDATA[Diese Aufgabe kann ausschließlich über die Kommandozeile ausgeführt werden.]]></de>
+        </locale>
+        <locale name="settings.cron.security_update">
+            <de><![CDATA[Sicherheits- und Fehlerbehebungsupdates]]></de>
+        </locale>
+        <locale name="settings.cron.security_update.description">
+            <de><![CDATA[Installiert automatisch Patch-Updates mit Sicherheitskorrekturen und Fehlerbehebungen.]]></de>
+        </locale>
+        <locale name="exception.cron.system.delete">
+            <de><![CDATA[System-Crons können nicht gelöscht werden. Du kannst sie deaktivieren.]]></de>
+        </locale>
+        <locale name="exception.cron.system.change">
+            <de><![CDATA[Die Aufgabe eines System-Crons kann nicht geändert werden.]]></de>
         </locale>
     </groups>
     <groups name="quiqqer/cron" datatype="php">
@@ -708,3 +722,4 @@ Dies kann besonders bei Shared-Hosting von großem Nutzen sein.]]></de>
         </locale>
     </groups>
 </locales>
+</quiqqer>

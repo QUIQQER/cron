@@ -27,28 +27,13 @@ class Update
     //region check for updates
 
     /**
-     * Execute the update check, if auto update is active
+     * Execute the scheduled update check
      *
      * @return void
      * @throws QUI\Exception|\PHPMailer\PHPMailer\Exception
      */
     public static function check(): void
     {
-        try {
-            $Package = QUI::getPackage('quiqqer/cron');
-            $Config = $Package->getConfig();
-        } catch (\Exception) {
-            return;
-        }
-
-        if (!$Config) {
-            return;
-        }
-
-        if (!$Config->get('update', 'auto_check')) {
-            return;
-        }
-
         self::checkExecute();
     }
 
@@ -120,7 +105,7 @@ class Update
     //region execute update
 
     /**
-     * execute an update, if auto update is active
+     * Execute the scheduled system update
      *
      * @param array<string, mixed> $params
      * @return void
@@ -128,21 +113,6 @@ class Update
      */
     public static function update(array $params = [], ?Manager $Manager = null): void
     {
-        try {
-            $Package = QUI::getPackage('quiqqer/cron');
-            $Config = $Package->getConfig();
-        } catch (\Exception) {
-            return;
-        }
-
-        if (!$Config) {
-            return;
-        }
-
-        if (!$Config->get('update', 'auto_update')) {
-            return;
-        }
-
         self::updateExecute($Manager);
     }
 
