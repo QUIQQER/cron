@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<quiqqer>
+<quiqqer xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://www.quiqqer.com/docs/schemas/2.x/settings.xsd">
     <settings>
 
         <config>
@@ -22,17 +23,6 @@
                     <defaultvalue>14000</defaultvalue>
                 </conf>
                 <conf name="cron_lock_timeout_notification">
-                    <type><![CDATA[bool]]></type>
-                    <defaultvalue>1</defaultvalue>
-                </conf>
-            </section>
-
-            <section name="update">
-                <conf name="auto_update">
-                    <type><![CDATA[bool]]></type>
-                    <defaultvalue>0</defaultvalue>
-                </conf>
-                <conf name="auto_check">
                     <type><![CDATA[bool]]></type>
                     <defaultvalue>1</defaultvalue>
                 </conf>
@@ -135,7 +125,8 @@
                             <locale group="quiqqer/cron" var="settings.update.category.title"/>
                         </title>
 
-                        <input conf="update.auto_check" type="checkbox">
+                        <input type="checkbox" data-name="check" data-setting="check"
+                               data-qui="package/quiqqer/cron/bin/controls/UpdateSetting">
                             <text>
                                 <locale group="quiqqer/cron" var="settings.cron.auto_check"/>
                             </text>
@@ -144,7 +135,18 @@
                             </description>
                         </input>
 
-                        <input conf="update.auto_update" type="checkbox">
+                        <input type="checkbox" data-name="security" data-setting="security"
+                               data-qui="package/quiqqer/cron/bin/controls/UpdateSetting">
+                            <text>
+                                <locale group="quiqqer/cron" var="settings.cron.security_update"/>
+                            </text>
+                            <description>
+                                <locale group="quiqqer/cron" var="settings.cron.security_update.description"/>
+                            </description>
+                        </input>
+
+                        <input type="checkbox" data-name="update" data-setting="update"
+                               data-qui="package/quiqqer/cron/bin/controls/UpdateSetting">
                             <text>
                                 <locale group="quiqqer/cron" var="settings.cron.auto_update"/>
                             </text>

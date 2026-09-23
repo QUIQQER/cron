@@ -86,69 +86,12 @@ class UpdateTest extends TestCase
     }
 
     #[Test]
-    public function automaticCheckReturnsWhenItIsDisabled(): void
-    {
-        $Config = $this->createMock(Config::class);
-        $Config->expects(self::once())
-            ->method('get')
-            ->with('update', 'auto_check')
-            ->willReturn(false);
-
-        $Package = $this->createMock(Package::class);
-        $Package->expects(self::once())
-            ->method('getConfig')
-            ->willReturn($Config);
-
-        $PackageManager = $this->createMock(PackageManager::class);
-        $PackageManager->expects(self::once())
-            ->method('getInstalledPackage')
-            ->with('quiqqer/cron')
-            ->willReturn($Package);
-        $PackageManager->expects(self::never())
-            ->method('getOutdated');
-
-        QUI::$PackageManager = $PackageManager;
-
-        Update::check();
-    }
-
-    #[Test]
-    public function automaticUpdateReturnsWhenItIsDisabled(): void
-    {
-        $Config = $this->createMock(Config::class);
-        $Config->expects(self::once())
-            ->method('get')
-            ->with('update', 'auto_update')
-            ->willReturn(false);
-
-        $Package = $this->createMock(Package::class);
-        $Package->expects(self::once())
-            ->method('getConfig')
-            ->willReturn($Config);
-
-        $PackageManager = $this->createMock(PackageManager::class);
-        $PackageManager->expects(self::once())
-            ->method('getInstalledPackage')
-            ->with('quiqqer/cron')
-            ->willReturn($Package);
-        $PackageManager->expects(self::never())
-            ->method('getOutdated');
-
-        QUI::$PackageManager = $PackageManager;
-
-        Update::update();
-    }
-
-    #[Test]
-    public function automaticCheckIgnoresDevelopmentVersions(): void
+    public function scheduledCheckIgnoresLegacyConfigAndDevelopmentVersions(): void
     {
         file_put_contents($this->updatesFile, 'stale update data');
 
         $Config = $this->createMock(Config::class);
-        $Config->expects(self::once())
-            ->method('get')
-            ->with('update', 'auto_check')
-            ->willReturn(true);
+        $Config->expects(self::never())->method('get');
 
         $Package = $this->createMock(Package::class);
         $Package->method('getConfig')
@@ -157,7 +100,7 @@ class UpdateTest extends TestCase
             ->willReturn(dirname($this->updatesFile) . '/');
 
         $PackageManager = $this->createMock(PackageManager::class);
-        $PackageManager->expects(self::exactly(2))
+        $PackageManager->expects(self::once())
             ->method('getInstalledPackage')
             ->with('quiqqer/cron')
             ->willReturn($Package);
@@ -178,7 +121,7 @@ class UpdateTest extends TestCase
     }
 
     #[Test]
-    public function enabledAutomaticUpdateReturnsCleanlyWithoutOutdatedPackages(): void
+    public function scheduledUpdateIgnoresLegacyConfigWithoutOutdatedPackages(): void
     {
         $GlobalConfig = $this->createMock(Config::class);
         $GlobalConfig->expects(self::once())
@@ -194,22 +137,8 @@ class UpdateTest extends TestCase
         $GlobalConfig->expects(self::exactly(2))
             ->method('save');
 
-        $PackageConfig = $this->createMock(Config::class);
-        $PackageConfig->expects(self::once())
-            ->method('get')
-            ->with('update', 'auto_update')
-            ->willReturn(true);
-
-        $Package = $this->createMock(Package::class);
-        $Package->expects(self::once())
-            ->method('getConfig')
-            ->willReturn($PackageConfig);
-
         $PackageManager = $this->createMock(PackageManager::class);
-        $PackageManager->expects(self::once())
-            ->method('getInstalledPackage')
-            ->with('quiqqer/cron')
-            ->willReturn($Package);
+        $PackageManager->expects(self::never())->method('getInstalledPackage');
         $PackageManager->expects(self::once())
             ->method('getOutdated')
             ->with(true)

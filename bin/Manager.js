@@ -380,7 +380,7 @@ define('package/quiqqer/cron/bin/Manager', [
                         editButton.disable();
                     }
 
-                    if (selected) {
+                    if (selected && self.$Grid.getSelectedData().every((cron) => cron.cronType !== 'system')) {
                         delButton.enable();
                     } else {
                         delButton.disable();
@@ -510,7 +510,7 @@ define('package/quiqqer/cron/bin/Manager', [
             const self = this,
                 data = this.$Grid.getSelectedData();
 
-            if (!data.length) {
+            if (!data.length || data.some((cron) => cron.cronType === 'system')) {
                 return this;
             }
 

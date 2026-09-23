@@ -299,7 +299,7 @@
 
         <autocreate>
             <interval>0 1 * * *</interval>
-            <active>0</active>
+            <active>1</active>
         </autocreate>
     </cron>
 </crons>
