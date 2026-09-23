@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<quiqqer xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://www.quiqqer.com/docs/schemas/2.x/locale.xsd">
 <locales>
     <groups name="quiqqer/cron" datatype="php,js">
         <locale name="package.title">
@@ -22,6 +24,18 @@
         </locale>
         <locale name="message.cron.cli_only">
 <it><![CDATA[Questa attività può essere eseguita solo dalla riga di comando.]]></it>
+        </locale>
+        <locale name="settings.cron.security_update">
+            <it><![CDATA[Aggiornamenti di sicurezza e correzioni di errori]]></it>
+        </locale>
+        <locale name="settings.cron.security_update.description">
+            <it><![CDATA[Installa automaticamente aggiornamenti patch con correzioni di sicurezza ed errori.]]></it>
+        </locale>
+        <locale name="exception.cron.system.delete">
+            <it><![CDATA[I cron di sistema non possono essere eliminati. Puoi disattivarli.]]></it>
+        </locale>
+        <locale name="exception.cron.system.change">
+            <it><![CDATA[Non è possibile cambiare l’attività di un cron di sistema.]]></it>
         </locale>
     </groups>
     <groups name="quiqqer/cron" datatype="php">
@@ -657,3 +671,4 @@
         </locale>
     </groups>
 </locales>
+</quiqqer>

@@ -141,7 +141,7 @@ class EventHandlerTest extends TestCase
         QUI::$PackageManager = $PackageManager;
 
         $Package = $this->createMock(Package::class);
-        $Package->expects(self::once())
+        $Package->expects(self::exactly(2))
             ->method('getName')
             ->willReturn('vendor/fixture');
         $Project = $this->createMock(Project::class);

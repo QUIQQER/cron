@@ -147,6 +147,10 @@ define('package/quiqqer/cron/bin/CronWindow', [
                 Ajax.get('package_quiqqer_cron_ajax_cron_get', function (result) {
                     self.$List.setValue(result.exec);
 
+                    if (result.system) {
+                        self.$List.disable();
+                    }
+
                     self.$CronTimeControl.setValue(
                         result.min,
                         result.hour,

@@ -226,6 +226,16 @@ class Manager
             );
         }
 
+        $existing = $this->getCronById($cronId);
+
+        if (
+            is_array($existing)
+            && $this->isSystemCron((string)$existing['exec'])
+            && ltrim((string)$existing['exec'], '\\') !== ltrim((string)$cronData['exec'], '\\')
+        ) {
+            throw new QUI\Exception(['quiqqer/cron', 'exception.cron.system.change']);
+        }
+
         // test the cron data
         try {
             new CronExpression("$min $hour $day $month $dayOfWeek");
@@ -299,14 +309,17 @@ class Manager
     {
         Permission::checkPermission('quiqqer.cron.delete');
 
+        // Validate the complete selection before deleting anything.
+        foreach ($ids as $id) {
+            $cron = $this->getCronById((int)$id);
+
+            if (is_array($cron) && $this->isSystemCron((string)$cron['exec'])) {
+                throw new QUI\Exception(['quiqqer/cron', 'exception.cron.system.delete']);
+            }
+        }
 
         foreach ($ids as $id) {
             $id = (int)$id;
-
-            if ($this->getCronById($id) === false) {
-                return;
-            }
-
             QUI::getDataBaseConnection()->delete(QUI\Utils\Doctrine::quoteIdentifier($this->table()), [
                 'id' => $id
             ]);
@@ -757,6 +770,20 @@ class Manager
         }
 
         return self::CRON_TYPE_CUSTOM;
+    }
+
+    public function isSystemCron(string $exec): bool
+    {
+        foreach ($this->getAvailableCrons() as $definition) {
+            if (
+                ltrim((string)$definition['exec'], '\\') === ltrim($exec, '\\')
+                && self::getCronType($definition) === self::CRON_TYPE_SYSTEM
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
