@@ -34,7 +34,7 @@
             <de><![CDATA[Sicherheits- und Fehlerbehebungsupdates]]></de>
         </locale>
         <locale name="settings.cron.security_update.description">
-            <de><![CDATA[Installiert automatisch Patch-Updates mit Sicherheitskorrekturen und Fehlerbehebungen.]]></de>
+            <de><![CDATA[Aktiviert den Cronjob für automatische Patch-Updates mit Sicherheitskorrekturen und Fehlerbehebungen. Den Ausführungszeitpunkt legst du unter „Cron / Wiederkehrende Aufgaben“ fest. Die Cron-Ausführung muss eingerichtet sein.]]></de>
         </locale>
         <locale name="exception.cron.system.delete">
             <de><![CDATA[System-Crons können nicht gelöscht werden. Du kannst sie deaktivieren.]]></de>

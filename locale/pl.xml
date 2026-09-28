@@ -29,7 +29,7 @@
             <pl><![CDATA[Aktualizacje zabezpieczeń i poprawki błędów]]></pl>
         </locale>
         <locale name="settings.cron.security_update.description">
-            <pl><![CDATA[Automatycznie instaluje aktualizacje poprawek zabezpieczeń i błędów.]]></pl>
+            <pl><![CDATA[Aktywuje zadanie cron automatycznie instalujące aktualizacje z poprawkami zabezpieczeń i błędów. Harmonogram wykonywania ustawisz w sekcji „Cron / Zadania cykliczne”. Wykonywanie zadań cron musi być skonfigurowane.]]></pl>
         </locale>
         <locale name="exception.cron.system.delete">
             <pl><![CDATA[Nie można usunąć systemowych zadań cron. Można je dezaktywować.]]></pl>

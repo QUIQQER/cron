@@ -29,7 +29,7 @@
             <fr><![CDATA[Mises à jour de sécurité et corrections de bugs]]></fr>
         </locale>
         <locale name="settings.cron.security_update.description">
-            <fr><![CDATA[Installe automatiquement les versions correctives de sécurité et de bugs.]]></fr>
+            <fr><![CDATA[Active la tâche cron pour installer automatiquement les mises à jour correctives de sécurité et de bugs. Définis les horaires d’exécution dans « Cron / Tâches récurrentes ». L’exécution des tâches cron doit être configurée.]]></fr>
         </locale>
         <locale name="exception.cron.system.delete">
             <fr><![CDATA[Les tâches cron système ne peuvent pas être supprimées. Vous pouvez les désactiver.]]></fr>
