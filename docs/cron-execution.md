@@ -41,7 +41,10 @@ Example of a partially failed cycle:
 
 stdout contains exactly one JSON document followed by a newline. Nonzero results also produce a short,
 fixed diagnostic on stderr. Neither channel forwards exception text, job parameters, or arbitrary job
-output. Symfony Process starts the workers with output disabled; the parent reads a bounded result from
+output. Symfony Process starts the workers with output buffering disabled and a discard callback that
+drains stdout and stderr through pipes. This avoids opening `/dev/null`, which is commonly excluded by
+`open_basedir` on hosted HTTP/FPM installations. The same handling applies to every job worker and the
+full-cycle CLI worker; it does not require loosening the hosting restriction. The parent reads a bounded result from
 a private temporary file and removes it after execution. This also isolates bootstrap messages, warnings,
 direct `fwrite(STDOUT, ...)` calls,
 and output from child commands. This is output isolation, not a sandbox for untrusted PHP jobs.
@@ -100,6 +103,22 @@ and `executeCron(int $cronId): static` signatures remain available. `execute()` 
 cycle implementation, discards the structured result and preserves propagation of technical execution
 exceptions. Lock contention and per-job failures still return normally to legacy callers.
 Full-cycle calls suppress callback output. Direct `executeCron()` calls retain their existing output behavior.
+
+## System updates
+
+All cron entrypoints use Core's process-aware update run repository to detect active updates.
+Full cycles check before and after acquiring their execution lock and between jobs. Single-job calls,
+including manually started jobs and isolated workers, check before reading the job and again immediately
+before invoking its callback. This also covers an update starting while a worker is bootstrapping.
+
+If an update is already active, a full cycle returns `system_update_running`. If a worker detects an update
+after the cycle started, it skips its job and the supervisor returns `execution_interrupted`. The current
+and remaining due jobs count as `skipped`, without failure diagnostics or success history. Their `lastexec`
+remains unchanged, so they remain eligible for the next cycle after the update. Direct `executeCron()` calls
+throw `SystemUpdateRunningException`, a `QUI\Exception`, when the update guard blocks execution.
+
+These checks do not terminate an already executing callback or lock the updater out until it finishes.
+An update starting after the final check can still overlap that callback; subsequent jobs are stopped.
 
 ## Per-job process isolation
 
