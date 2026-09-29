@@ -41,7 +41,10 @@ Example of a partially failed cycle:
 
 stdout contains exactly one JSON document followed by a newline. Nonzero results also produce a short,
 fixed diagnostic on stderr. Neither channel forwards exception text, job parameters, or arbitrary job
-output. Symfony Process starts the workers with output disabled; the parent reads a bounded result from
+output. Symfony Process starts the workers with output buffering disabled and a discard callback that
+drains stdout and stderr through pipes. This avoids opening `/dev/null`, which is commonly excluded by
+`open_basedir` on hosted HTTP/FPM installations. The same handling applies to every job worker and the
+full-cycle CLI worker; it does not require loosening the hosting restriction. The parent reads a bounded result from
 a private temporary file and removes it after execution. This also isolates bootstrap messages, warnings,
 direct `fwrite(STDOUT, ...)` calls,
 and output from child commands. This is output isolation, not a sandbox for untrusted PHP jobs.
