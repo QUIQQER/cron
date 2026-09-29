@@ -49,7 +49,13 @@ final class WorkerProcess
 
             // No output buffers that could themselves exhaust the supervisor's memory.
             $Process->disableOutput();
-            $exitCode = $Process->run();
+
+            // A callback makes Symfony use pipes instead of opening /dev/null, which open_basedir may forbid.
+            $discardOutput = static function (string $type, string $buffer): void {
+                // Output stays disabled: discard each chunk without retaining or forwarding it.
+            };
+
+            $exitCode = $Process->run($discardOutput);
             $report = file_get_contents($reportFile, length: 8193);
 
             return [
