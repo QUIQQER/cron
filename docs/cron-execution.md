@@ -104,6 +104,22 @@ cycle implementation, discards the structured result and preserves propagation o
 exceptions. Lock contention and per-job failures still return normally to legacy callers.
 Full-cycle calls suppress callback output. Direct `executeCron()` calls retain their existing output behavior.
 
+## System updates
+
+All cron entrypoints use Core's process-aware update run repository to detect active updates.
+Full cycles check before and after acquiring their execution lock and between jobs. Single-job calls,
+including manually started jobs and isolated workers, check before reading the job and again immediately
+before invoking its callback. This also covers an update starting while a worker is bootstrapping.
+
+If an update is already active, a full cycle returns `system_update_running`. If a worker detects an update
+after the cycle started, it skips its job and the supervisor returns `execution_interrupted`. The current
+and remaining due jobs count as `skipped`, without failure diagnostics or success history. Their `lastexec`
+remains unchanged, so they remain eligible for the next cycle after the update. Direct `executeCron()` calls
+throw `SystemUpdateRunningException`, a `QUI\Exception`, when the update guard blocks execution.
+
+These checks do not terminate an already executing callback or lock the updater out until it finishes.
+An update starting after the final check can still overlap that callback; subsequent jobs are stopped.
+
 ## Per-job process isolation
 
 All full-cycle entrypoints (machine CLI, legacy CLI/HTTP and administration) execute each due job sequentially

@@ -4,6 +4,7 @@ namespace QUITests\Unit\Cron\Fixtures;
 
 use DateTimeInterface;
 use QUI\Cron\Manager;
+use QUI\Cron\SystemUpdateRunningException;
 use RuntimeException;
 use Symfony\Component\Lock\LockInterface;
 
@@ -17,6 +18,7 @@ class ResultManager extends Manager
     public ?int $stopAfter = null;
     public bool $initializationFails = false;
     public bool $updateCheckFails = false;
+    public bool $updateStartsInWorker = false;
     public bool $markerFails = false;
     public bool $clearFails = false;
     public bool $legacyLocked = false;
@@ -112,6 +114,10 @@ class ResultManager extends Manager
 
     protected function executeScheduledCron(int $cronId): void
     {
+        if ($this->updateStartsInWorker) {
+            throw new SystemUpdateRunningException();
+        }
+
         $this->executeCron($cronId);
     }
 }

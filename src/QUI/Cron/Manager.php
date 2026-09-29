@@ -564,6 +564,9 @@ class Manager
                 } else {
                     $this->executedCount++;
                 }
+            } catch (SystemUpdateRunningException) {
+                $this->executionInterrupted = true;
+                Manager::log('SKIP cron during system update (ID: ' . $entry['id'] . ')');
             } catch (Throwable $Error) {
                 $this->failedCount++;
                 $message = 'Cron execution failed (ID: ' . $entry['id'] . ').';
@@ -723,6 +726,9 @@ class Manager
     {
         Permission::checkPermission('quiqqer.cron.execute');
 
+        if ($this->isSystemUpdateRunning()) {
+            throw new SystemUpdateRunningException();
+        }
 
         $cronData = $this->getCronById($cronId);
         $params = [];
@@ -748,10 +754,6 @@ class Manager
             }
         }
 
-        Manager::log('START cron "' . $cronData['title'] . '" (ID: ' . $cronId . ')');
-        $start = microtime(true);
-        $starTime = time();
-
         if (!is_callable($cronData['exec'])) {
             $this->lastCronFailed = true;
             $this->lastCronDiagnostics = [
@@ -766,6 +768,15 @@ class Manager
 
             return $this;
         }
+
+        // Recheck after loading the cron definition and its callback class.
+        if ($this->isSystemUpdateRunning()) {
+            throw new SystemUpdateRunningException();
+        }
+
+        Manager::log('START cron "' . $cronData['title'] . '" (ID: ' . $cronId . ')');
+        $start = microtime(true);
+        $starTime = time();
 
         call_user_func_array($cronData['exec'], [$params, $this]);
 

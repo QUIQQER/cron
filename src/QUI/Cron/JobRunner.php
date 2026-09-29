@@ -29,6 +29,7 @@ class JobRunner
     /**
      * @param array{path: string, token: string} $lockContext
      * @return array{failed: bool, stop: bool}
+     * @throws SystemUpdateRunningException When the worker skips the job during an update.
      */
     public function run(
         int $cronId,
@@ -80,6 +81,19 @@ class JobRunner
             return $failure;
         }
 
+        $updateRunning = $data['updateRunning'] ?? false;
+
+        if (!is_bool($updateRunning)) {
+            return $failure;
+        }
+
+        if (
+            $updateRunning
+            && ($data['failed'] || !$data['stop'])
+        ) {
+            return $failure;
+        }
+
         if (is_array($data['diagnostics'] ?? null)) {
             $workerDiagnostics = Diagnostics::filter($data['diagnostics']);
             $this->diagnostics = array_replace(
@@ -106,6 +120,10 @@ class JobRunner
 
         if (!$data['failed']) {
             $this->diagnostics = [];
+        }
+
+        if ($updateRunning) {
+            throw new SystemUpdateRunningException();
         }
 
         return [
