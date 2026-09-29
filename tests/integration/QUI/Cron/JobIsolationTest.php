@@ -2,10 +2,12 @@
 
 namespace QUITests\Integration\Cron;
 
+use Monolog\Handler\TestHandler;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use QUI;
 use QUI\Cron\Manager;
+use QUI\Log\Logger;
 use QUITests\Integration\Cron\Fixtures\IsolatedCycleManager;
 use ReflectionProperty;
 
@@ -21,9 +23,14 @@ class JobIsolationTest extends TestCase
 
     private mixed $previousUser;
 
+    private TestHandler $Handler;
+
     protected function setUp(): void
     {
         self::cleanup();
+
+        $this->Handler = new TestHandler();
+        Logger::getLogger()->pushHandler($this->Handler);
 
         $Session = new ReflectionProperty(QUI::getUsers(), 'Session');
         $this->previousUser = $Session->getValue(QUI::getUsers());
@@ -32,6 +39,7 @@ class JobIsolationTest extends TestCase
 
     protected function tearDown(): void
     {
+        Logger::getLogger()->popHandler();
         self::cleanup();
 
         $Session = new ReflectionProperty(QUI::getUsers(), 'Session');
@@ -50,17 +58,76 @@ class JobIsolationTest extends TestCase
         yield 'early exit with success code' => ['exit'];
         yield 'PHP error' => ['error'];
         yield 'missing callback' => ['missing'];
+        yield 'missing project' => ['project'];
+        yield 'killed worker' => ['signal'];
     }
 
     #[DataProvider('failures')]
     public function testFailedJobCannotPreventNextJobOrCreateSuccessHistory(string $mode): void
     {
+        if (
+            $mode === 'signal'
+            && !function_exists('posix_kill')
+        ) {
+            self::markTestSkipped('POSIX signals are not available.');
+        }
+
         $this->addJob(['mode' => $mode], $mode === 'missing');
         $file = $this->addJob(['limit' => 25]);
         $Manager = new IsolatedCycleManager($this->ids);
         $Result = $Manager->executeWithResult();
 
         self::assertSame('completed_with_errors', $Result->status);
+
+        $records = array_filter(
+            $this->Handler->getRecords(),
+            fn ($record) => ($record['context']['cronId'] ?? null) === $this->ids[0]
+        );
+        $records = array_values($records);
+
+        self::assertCount(1, $records);
+
+        $record = $records[0];
+        $context = $record['context'];
+        $encodedContext = json_encode($context);
+        $logFilename = $record['extra']['quiqqer']['filename']
+            ?? $context['filename']
+            ?? null;
+
+        $expectedReason = match ($mode) {
+            'oom' => 'memory_exhausted',
+            'exit' => 'worker_exited',
+            'missing' => 'callback_not_callable',
+            'project' => 'project_not_found',
+            'signal' => 'worker_signaled',
+            default => 'exception'
+        };
+
+        self::assertSame('cron', $logFilename);
+        self::assertSame($expectedReason, $context['reason']);
+        self::assertArrayHasKey('callback', $context);
+        self::assertArrayHasKey('exitCode', $context);
+        self::assertStringNotContainsString('probeFile', $encodedContext);
+        self::assertStringNotContainsString('secret-fixture', $encodedContext);
+
+        if (in_array($mode, ['oom', 'error', 'project'], true)) {
+            self::assertArrayHasKey('sourceFile', $context);
+            self::assertGreaterThan(0, $context['sourceLine']);
+        }
+
+        if ($mode === 'error') {
+            self::assertSame('Error', $context['exceptionType']);
+        }
+
+        if ($mode === 'project') {
+            self::assertSame(804, $context['exceptionCode']);
+        }
+
+        if ($mode === 'signal') {
+            self::assertSame(9, $context['signal']);
+            self::assertSame(137, $context['exitCode']);
+        }
+
         self::assertSame(
             [2, 1, 1, 0],
             [

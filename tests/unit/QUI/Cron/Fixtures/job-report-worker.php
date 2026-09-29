@@ -31,6 +31,24 @@ switch ($input['id']) {
         );
         exit(0);
 
+    case 7:
+        $result = [
+            'failed' => true,
+            'stop' => false,
+            'diagnostics' => [
+                'reason' => 'memory_exhausted',
+                'exitCode' => 0,
+                'message' => 'secret-fixture',
+                'params' => [
+                    'password' => 'secret-fixture'
+                ]
+            ]
+        ];
+        $encodedResult = json_encode($result, JSON_THROW_ON_ERROR);
+
+        fwrite($report, $encodedResult);
+        exit(255);
+
     default:
         exit(0);
 }

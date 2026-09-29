@@ -94,6 +94,13 @@ class Manager
     private int $failedCount = 0;
     private bool $executionInterrupted = false;
     protected bool $lastCronFailed = false;
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected array $lastCronDiagnostics = [];
+
+    protected bool $isolatedJobWorker = false;
     private ?Throwable $executionFailure = null;
     private bool $runningCycle = false;
     private ?LockInterface $executionLock = null;
@@ -519,12 +526,15 @@ class Manager
                     self::$runtime['finished']++;
                     continue;
                 }
-            } catch (Throwable) {
+            } catch (Throwable $Error) {
                 // A schedule that cannot be evaluated is a failed candidate, never a successful run.
                 $this->scheduledCount++;
                 $this->failedCount++;
                 self::$runtime['finished']++;
-                Log::addError('Could not evaluate cron schedule (ID: ' . $entry['id'] . ').');
+                Diagnostics::logFailure(
+                    $entry['id'],
+                    Diagnostics::exceptionContext($Error, 'schedule')
+                );
                 continue;
             }
 
@@ -546,6 +556,7 @@ class Manager
                 self::$runtime['currentCronId'] = $entry['id'];
                 self::$runtime['currentCronTitle'] = $entry['title'];
                 $this->lastCronFailed = false;
+                $this->lastCronDiagnostics = [];
                 $this->executeScheduledCron($entry['id']);
 
                 if ($this->lastCronFailed) {
@@ -553,10 +564,18 @@ class Manager
                 } else {
                     $this->executedCount++;
                 }
-            } catch (Throwable) {
+            } catch (Throwable $Error) {
                 $this->failedCount++;
                 $message = 'Cron execution failed (ID: ' . $entry['id'] . ').';
-                Log::addError($message);
+                $diagnostics = $this->lastCronDiagnostics;
+
+                if ($diagnostics === []) {
+                    $diagnostics = Diagnostics::exceptionContext($Error, 'worker');
+                }
+
+                $diagnostics['callback'] = $entry['exec'] ?? '';
+
+                Diagnostics::logFailure($entry['id'], $diagnostics);
                 QUI::getMessagesHandler()->addError($message);
             }
 
@@ -591,6 +610,7 @@ class Manager
         );
 
         $this->lastCronFailed = $result['failed'];
+        $this->lastCronDiagnostics = $Runner->getDiagnostics();
 
         if ($result['stop']) {
             $this->stopAfterCurrentCron();
@@ -734,7 +754,16 @@ class Manager
 
         if (!is_callable($cronData['exec'])) {
             $this->lastCronFailed = true;
-            Log::addError('Cron is not callable "' . $cronData['title'] . '" (ID: ' . $cronId . ')');
+            $this->lastCronDiagnostics = [
+                'reason' => 'callback_not_callable',
+                'phase' => 'callback',
+                'callback' => $cronData['exec']
+            ];
+
+            if (!$this->isolatedJobWorker) {
+                Diagnostics::logFailure($cronId, $this->lastCronDiagnostics);
+            }
+
             return $this;
         }
 

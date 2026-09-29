@@ -4,6 +4,9 @@ namespace QUITests\Integration\Cron\Fixtures;
 
 use DateTimeInterface;
 use QUI\Cron\Manager;
+use Symfony\Component\Lock\LockFactory;
+use Symfony\Component\Lock\LockInterface;
+use Symfony\Component\Lock\Store\FlockStore;
 
 class ExecutionManager extends Manager
 {
@@ -31,6 +34,26 @@ class ExecutionManager extends Manager
     protected function isSystemUpdateRunning(): bool
     {
         return $this->updateRunning;
+    }
+
+    protected function createExecutionLock(): LockInterface
+    {
+        $Factory = new LockFactory(new FlockStore());
+
+        return $Factory->createLock('phpunit-cron-execution-manager-' . getmypid(), null);
+    }
+
+    protected function isLegacyExecutionLocked(): bool
+    {
+        return false;
+    }
+
+    protected function setLegacyExecutionLock(int $seconds): void
+    {
+    }
+
+    protected function clearLegacyExecutionLock(): void
+    {
     }
 
     protected function executeCronList(array $activeList, DateTimeInterface $EndTime): void

@@ -45,8 +45,16 @@ class ExecutableCron
             case 'exit':
                 exit(0);
 
+            case 'signal':
+                posix_kill(getmypid(), 9);
+                break;
+
             case 'error':
-                throw new \Error('Cron fixture failure');
+                throw new \Error('Cron fixture failure secret-fixture');
+
+            case 'project':
+                \QUI::getProject('phpunit_cron_missing_project_secret-fixture', 'de');
+                break;
         }
     }
 }

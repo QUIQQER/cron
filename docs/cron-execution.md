@@ -186,6 +186,30 @@ For deployment, stop scheduler entrypoints and let pre-upgrade cycles finish bef
 then restart them. The compatibility cache marker is respected while valid, but cannot make concurrently
 running old code atomic or prevent an old `--force` caller from bypassing its own legacy lock.
 
+## Cron failure diagnostics
+
+Scheduled job failures are written to `var/log/cron-YYYY-MM-DD.log`. These error records are
+always enabled; `settings.writeCronLog` still controls the optional START/FINISH progress messages.
+The supervisor writes one diagnostic record for each failed job, including its `cronId`, callback,
+execution phase and observed process exit code when available.
+
+The `reason` distinguishes exceptions, missing projects (`project_not_found`, QUIQQER error 804),
+missing callables (`callback_not_callable`), memory exhaustion (`memory_exhausted`), other fatal
+PHP errors (`fatal_error`), premature `exit()` (`worker_exited`), termination by signal
+(`worker_signaled`) and missing or invalid worker reports. Exceptions and fatal PHP errors include
+the source file and line; exceptions also include their class and numeric code. A signal termination
+includes the signal number. Missing reports can indicate a failure before the worker started, so
+check the CLI PHP binary and worker installation in that case.
+
+Following the PayPal diagnostics pattern, records contain bounded diagnostic metadata only.
+Cron parameters, raw exception messages, stack traces and subprocess output are not copied into
+the report or log. Use the cron ID to inspect its configuration and the source location to investigate
+the failure. Diagnostic details remain outside the public machine-result JSON.
+
+A small worker memory reserve permits shutdown reporting after PHP memory exhaustion. Hard kills
+cannot run a shutdown handler; the supervisor reports the process signal instead. Diagnostics do not
+remove or deactivate failed cron definitions, including references to deleted projects.
+
 ## Validation and review
 
 Tests cover result counters, empty cycles, update checks before/after acquisition, mid-cycle interruption,

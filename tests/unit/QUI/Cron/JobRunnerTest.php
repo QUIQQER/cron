@@ -62,5 +62,31 @@ class JobRunnerTest extends TestCase
             ],
             $result
         );
+
+        $diagnostics = $Runner->getDiagnostics();
+
+        self::assertSame('worker_report_missing', $diagnostics['reason']);
+        self::assertNotSame(0, $diagnostics['exitCode']);
+    }
+
+    public function testDiagnosticReportCannotOverrideObservedExitCodeOrLeakExtraFields(): void
+    {
+        $Runner = new JobRunner(PHP_BINARY, __DIR__ . '/Fixtures/job-report-worker.php');
+        $context = [
+            'path' => '/unused',
+            'token' => 'unused'
+        ];
+        $result = $Runner->run(7, '5', true, $context);
+        $diagnostics = $Runner->getDiagnostics();
+        $encodedDiagnostics = json_encode($diagnostics);
+
+        self::assertTrue($result['failed']);
+        self::assertSame('memory_exhausted', $diagnostics['reason']);
+        self::assertSame(255, $diagnostics['exitCode']);
+        self::assertStringNotContainsString('secret-fixture', $encodedDiagnostics);
+
+        $Runner->run(1, '5', true, $context);
+
+        self::assertSame([], $Runner->getDiagnostics());
     }
 }
