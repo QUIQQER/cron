@@ -21,7 +21,7 @@ if ($timeout === '2') {
     throw new RuntimeException('secret fatal exception');
 }
 
-$report = fopen('php://fd/3', 'w');
+$report = fopen(getenv('QUIQQER_CRON_REPORT'), 'w');
 
 if ($timeout === '3') {
     fwrite($report, '{"status":"secret invalid report"}');

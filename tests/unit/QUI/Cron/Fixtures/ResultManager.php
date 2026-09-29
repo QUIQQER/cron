@@ -109,4 +109,9 @@ class ResultManager extends Manager
 
         return $this;
     }
+
+    protected function executeScheduledCron(int $cronId): void
+    {
+        $this->executeCron($cronId);
+    }
 }
