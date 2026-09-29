@@ -129,6 +129,22 @@ class ExecutionResultTest extends TestCase
         self::assertSame([1], $Manager->calls);
     }
 
+    public function testUpdateDetectedByWorkerSkipsCurrentAndRemainingJobs(): void
+    {
+        $Manager = $this->manager();
+        $Manager->entries = $this->entries();
+        $Manager->updateStartsInWorker = true;
+        $Result = $Manager->executeWithResult();
+
+        self::assertSame('execution_interrupted', $Result->status);
+        self::assertSame(3, $Result->scheduled);
+        self::assertSame(3, $Result->skipped);
+        self::assertSame(0, $Result->executed);
+        self::assertSame(0, $Result->failed);
+        self::assertSame([], $Manager->calls);
+        self::assertSame(1, $Manager->markerClears);
+    }
+
     public function testRequestedStopCountsRemainingDueJobsAsSkipped(): void
     {
         $Manager = $this->manager();

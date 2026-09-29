@@ -4,6 +4,7 @@ namespace QUITests\Unit\Cron;
 
 use PHPUnit\Framework\TestCase;
 use QUI\Cron\JobRunner;
+use QUI\Cron\SystemUpdateRunningException;
 
 class JobRunnerTest extends TestCase
 {
@@ -31,7 +32,7 @@ class JobRunnerTest extends TestCase
             $Runner->run(2, '5', true, $context)
         );
 
-        foreach ([3, 4, 5, 6] as $id) {
+        foreach ([3, 4, 5, 6, 9, 10, 11, 12] as $id) {
             self::assertSame(
                 [
                     'failed' => true,
@@ -39,6 +40,23 @@ class JobRunnerTest extends TestCase
                 ],
                 $Runner->run($id, '5', true, $context)
             );
+        }
+    }
+
+    public function testWorkerUpdateGuardIsReportedAsAnInterruption(): void
+    {
+        $Runner = new JobRunner(PHP_BINARY, __DIR__ . '/Fixtures/job-report-worker.php');
+        $context = [
+            'path' => '/unused',
+            'token' => 'unused'
+        ];
+
+        $this->expectException(SystemUpdateRunningException::class);
+
+        try {
+            $Runner->run(8, '5', true, $context);
+        } finally {
+            self::assertSame([], $Runner->getDiagnostics());
         }
     }
 

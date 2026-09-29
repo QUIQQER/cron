@@ -128,13 +128,20 @@ try {
          * @return array{
          *     failed: bool,
          *     stop: bool,
-         *     diagnostics: array<string, mixed>
+         *     updateRunning?: bool,
+         *     diagnostics?: array<string, mixed>
          * }
          */
         public function runJob(int $id): array
         {
             try {
                 $this->executeCron($id);
+            } catch (QUI\Cron\SystemUpdateRunningException) {
+                return [
+                    'failed' => false,
+                    'stop' => true,
+                    'updateRunning' => true
+                ];
             } catch (Throwable $Error) {
                 $this->lastCronFailed = true;
                 $this->lastCronDiagnostics = QUI\Cron\Diagnostics::exceptionContext(

@@ -3,9 +3,11 @@
 namespace QUITests\Integration\Cron;
 
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use QUI;
 use QUI\Cron\Manager;
+use QUI\Cron\SystemUpdateRunningException;
 use QUI\Interfaces\Users\User;
 use ReflectionProperty;
 use QUITests\Integration\Cron\Fixtures\DatabaseManager;
@@ -245,6 +247,59 @@ class ManagerDatabaseTest extends TestCase
 
         self::assertSame($Manager, $Manager->executeCron($this->cronId));
         self::assertSame(5, $this->countFixtureHistory());
+    }
+
+    public static function activeUpdateStates(): array
+    {
+        return [
+            'update already running' => [[true], 0],
+            'update starts while preparing the job' => [[false, true], 1]
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('activeUpdateStates')]
+    public function singleCronIsSkippedDuringUpdate(array $updateStates, int $expectedReads): void
+    {
+        $Manager = new class ($updateStates) extends Manager {
+            public int $cronReads = 0;
+
+            public function __construct(private array $updateStates)
+            {
+            }
+
+            protected function isSystemUpdateRunning(): bool
+            {
+                return array_shift($this->updateStates) ?? false;
+            }
+
+            public function getCronById(int $cronId): array | false
+            {
+                $this->cronReads++;
+
+                return parent::getCronById($cronId);
+            }
+        };
+        $cronBefore = (new Manager())->getCronById($this->cronId);
+
+        try {
+            $Manager->executeCron($this->cronId);
+            self::fail('An active update must prevent callback execution.');
+        } catch (SystemUpdateRunningException) {
+            self::assertSame([], ExecutableCron::$calls);
+            self::assertSame($expectedReads, $Manager->cronReads);
+            self::assertSame(5, $this->countFixtureHistory());
+
+            $cronAfter = (new Manager())->getCronById($this->cronId);
+
+            self::assertSame($cronBefore['lastexec'], $cronAfter['lastexec']);
+        }
+
+        // Once the update has finished, the same job remains executable.
+        $Manager->executeCron($this->cronId);
+
+        self::assertCount(1, ExecutableCron::$calls);
+        self::assertSame(6, $this->countFixtureHistory());
     }
 
     #[Test]

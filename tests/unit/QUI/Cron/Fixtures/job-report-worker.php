@@ -49,6 +49,21 @@ switch ($input['id']) {
         fwrite($report, $encodedResult);
         exit(255);
 
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+        $result = [
+            'failed' => $input['id'] === 10,
+            'stop' => $input['id'] !== 11,
+            'updateRunning' => $input['id'] === 9 ? 'true' : true
+        ];
+        $encodedResult = json_encode($result, JSON_THROW_ON_ERROR);
+
+        fwrite($report, $encodedResult);
+        exit($input['id'] === 12 ? 42 : 0);
+
     default:
         exit(0);
 }
