@@ -29,7 +29,7 @@
             <pt><![CDATA[Atualizações de segurança e correções de erros]]></pt>
         </locale>
         <locale name="settings.cron.security_update.description">
-            <pt><![CDATA[Instala automaticamente atualizações de correção de segurança e erros.]]></pt>
+            <pt><![CDATA[Ativa a tarefa cron para instalar automaticamente atualizações com correções de segurança e erros. Define o horário de execução em «Cron / Tarefas recorrentes». A execução das tarefas cron tem de estar configurada.]]></pt>
         </locale>
         <locale name="exception.cron.system.delete">
             <pt><![CDATA[As tarefas cron do sistema não podem ser eliminadas. Pode desativá-las.]]></pt>

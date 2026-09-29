@@ -257,7 +257,8 @@ class ManagerDatabaseTest extends TestCase
         self::assertSame('executed', $Result->status);
         self::assertSame(1, $Result->executed);
         self::assertSame(1, $Result->scheduled);
-        self::assertCount(1, ExecutableCron::$calls);
+        // The callback runs in its own process; its in-memory state cannot leak into the supervisor.
+        self::assertSame([], ExecutableCron::$calls);
         self::assertSame(6, $this->countFixtureHistory());
 
         $Next = $Manager->executeWithResult();

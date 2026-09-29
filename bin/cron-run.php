@@ -10,16 +10,19 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 
-require dirname(__DIR__) . '/src/QUI/Cron/ExecutionResult.php';
-require dirname(__DIR__) . '/src/QUI/Cron/Console/MachineRunner.php';
-
 // Do not allow PHP warnings (including process startup errors) to disclose paths or credentials.
 ini_set('display_errors', '0');
 set_error_handler(static function (): bool {
     return true;
 });
 
-$Result = (new MachineRunner())->run(array_slice($argv, 1), __DIR__ . '/cron-worker.php');
+require_once dirname(__DIR__, 3) . '/autoload.php';
+
+$Runner = new MachineRunner();
+$Result = $Runner->run(
+    array_slice($argv ?? [], 1),
+    __DIR__ . '/cron-worker.php'
+);
 
 if ($Result->exitCode() !== 0) {
     fwrite(STDERR, 'Cron cycle: ' . $Result->status . PHP_EOL);

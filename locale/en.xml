@@ -34,7 +34,7 @@
             <en><![CDATA[Security and bug-fix updates]]></en>
         </locale>
         <locale name="settings.cron.security_update.description">
-            <en><![CDATA[Automatically installs patch updates with security fixes and bug fixes.]]></en>
+            <en><![CDATA[Activates the cron job for automatic patch updates with security fixes and bug fixes. Set the execution schedule under “Cron / Recurring tasks”. Cron execution must be configured.]]></en>
         </locale>
         <locale name="exception.cron.system.delete">
             <en><![CDATA[System crons cannot be deleted. You can deactivate them.]]></en>

@@ -2,6 +2,9 @@
 
 Related: [quiqqer/cron#62](https://dev.quiqqer.com/quiqqer/cron/-/work_items/62)
 
+Job isolation: [walking-family-project#219](https://dev.quiqqer.com/pcsg/projects/walking-family-project/-/work_items/219).
+Process execution: [quiqqer/core#1466](https://dev.quiqqer.com/quiqqer/core/-/work_items/1466).
+
 ## Machine CLI
 
 From the QUIQQER installation directory, run:
@@ -38,8 +41,9 @@ Example of a partially failed cycle:
 
 stdout contains exactly one JSON document followed by a newline. Nonzero results also produce a short,
 fixed diagnostic on stderr. Neither channel forwards exception text, job parameters, or arbitrary job
-output. The parent starts a worker with stdout/stderr discarded and reads the bounded result through a
-separate pipe. This also isolates bootstrap messages, warnings, direct `fwrite(STDOUT, ...)` calls,
+output. Symfony Process starts the workers with output disabled; the parent reads a bounded result from
+a private temporary file and removes it after execution. This also isolates bootstrap messages, warnings,
+direct `fwrite(STDOUT, ...)` calls,
 and output from child commands. This is output isolation, not a sandbox for untrusted PHP jobs.
 
 The parent verifies both the report and worker exit code. A worker that exits early, crashes, returns
@@ -95,14 +99,43 @@ $json = json_encode($Result, JSON_THROW_ON_ERROR);
 and `executeCron(int $cronId): static` signatures remain available. `execute()` delegates to the same
 cycle implementation, discards the structured result and preserves propagation of technical execution
 exceptions. Lock contention and per-job failures still return normally to legacy callers.
-The PHP API does not suppress callback output; use the machine CLI for isolated stdout/stderr.
+Full-cycle calls suppress callback output. Direct `executeCron()` calls retain their existing output behavior.
+
+## Per-job process isolation
+
+All full-cycle entrypoints (machine CLI, legacy CLI/HTTP and administration) execute each due job sequentially
+in a fresh PHP process using `symfony/process`. A job exhausting its PHP memory limit, exiting early, or
+throwing an error is counted as failed; the supervisor continues with the next due job. There is no unsafe
+in-process fallback when a worker cannot start. A hard OS/container memory kill of the supervisor itself
+remains outside this protection.
+
+Workers load the same installation, retrieve their job and parameters by ID, and preserve the initiating
+session user's identity for permissions and history. Only normally completed callbacks update `lastexec`
+and success history. The report and process exit code must agree before a job is counted as successful.
+`stopAfterCurrentCron()` is sent back to the supervisor, including when a callback subsequently throws.
+Jobs in web-origin cycles retain the CLI-only exclusion. Worker startup does not reuse the browser session.
+
+Callbacks must persist any state needed by later jobs. Process-local globals, events and static caches no
+longer carry over between scheduled jobs. Callback output and UI messages are not forwarded to the initiating
+request; failures are logged by the supervisor with the cron ID. Direct, manually requested `executeCron()`
+calls keep their existing in-process API and remain outside full-cycle locking.
+
+The CLI uses its current PHP executable; web entrypoints use `globals.phpCommand` (default `php`), which must
+name a CLI executable available to the web server user. Every full-cycle entrypoint now requires process
+creation, `symfony/process`, a writable temporary directory and the installation's local lock directory.
+Workers inherit the parent's PHP memory limit and timezone; PHP's CLI configuration supplies other settings.
+There is intentionally no per-job timeout: long-running existing jobs must not be killed by Symfony's
+default 60-second timeout. A blocked callback can therefore still hold up a cycle.
 
 ## Local process locking
 
 The approved implementation uses Symfony's `FlockStore` under `VAR_DIR/locks/`, with an installation-specific
 key derived from `CMS_DIR`. CLI, HTTP, administration, and legacy full-cycle calls use the same lock.
 Acquisition is atomic. Ownership is the non-serializable kernel file handle; another process or an old
-lock object cannot release the current owner's lock. An unexpected process exit releases the lock.
+lock object cannot release the current owner's lock. A second local flock guard is shared by the supervisor
+and its current job worker. It prevents a new cycle from starting while a worker survives a supervisor crash.
+A generation token prevents a delayed worker from joining a later cycle. When both processes exit, their
+kernel locks are released automatically.
 Lock files must never be removed while workers may be running, including by cache cleanup or manual scripts.
 
 **Approved deviation from #62:** this is a local process lock without TTL, rather than an expiring lease.
@@ -153,10 +186,35 @@ For deployment, stop scheduler entrypoints and let pre-upgrade cycles finish bef
 then restart them. The compatibility cache marker is respected while valid, but cannot make concurrently
 running old code atomic or prevent an old `--force` caller from bypassing its own legacy lock.
 
+## Cron failure diagnostics
+
+Scheduled job failures are written to `var/log/cron-YYYY-MM-DD.log`. These error records are
+always enabled; `settings.writeCronLog` still controls the optional START/FINISH progress messages.
+The supervisor writes one diagnostic record for each failed job, including its `cronId`, callback,
+execution phase and observed process exit code when available.
+
+The `reason` distinguishes exceptions, missing projects (`project_not_found`, QUIQQER error 804),
+missing callables (`callback_not_callable`), memory exhaustion (`memory_exhausted`), other fatal
+PHP errors (`fatal_error`), premature `exit()` (`worker_exited`), termination by signal
+(`worker_signaled`) and missing or invalid worker reports. Exceptions and fatal PHP errors include
+the source file and line; exceptions also include their class and numeric code. A signal termination
+includes the signal number. Missing reports can indicate a failure before the worker started, so
+check the CLI PHP binary and worker installation in that case.
+
+Following the PayPal diagnostics pattern, records contain bounded diagnostic metadata only.
+Cron parameters, raw exception messages, stack traces and subprocess output are not copied into
+the report or log. Use the cron ID to inspect its configuration and the source location to investigate
+the failure. Diagnostic details remain outside the public machine-result JSON.
+
+A small worker memory reserve permits shutdown reporting after PHP memory exhaustion. Hard kills
+cannot run a shutdown handler; the supervisor reports the process signal instead. Diagnostics do not
+remove or deactivate failed cron definitions, including references to deleted projects.
+
 ## Validation and review
 
 Tests cover result counters, empty cycles, update checks before/after acquisition, mid-cycle interruption,
-job errors, missing callables, initialization and lock failures, owner-only release, process death, actual
+job errors, real PHP memory exhaustion, premature exit, missing callables, initialization and lock failures,
+preserved user/history, stop requests, owner-only release, supervisor death with a surviving job, actual
 cross-process skip/wait/timeout, runs beyond the old TTL, recursive calls, and raw-output isolation.
 Integration fixtures select only their own database rows; entrypoint contention tests hold the process
 lock so installed jobs cannot run. The new Symfony Lock dependency is explicit and does not require
