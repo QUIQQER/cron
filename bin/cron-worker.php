@@ -10,11 +10,16 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 
-$report = @fopen('php://fd/3', 'w');
+$reportPath = getenv('QUIQQER_CRON_REPORT');
+$report = is_string($reportPath) && $reportPath !== ''
+    ? @fopen($reportPath, 'w')
+    : false;
 
 if ($report === false) {
     exit(7);
 }
+
+putenv('QUIQQER_CRON_REPORT');
 
 require_once dirname(__DIR__) . '/src/QUI/Cron/ExecutionResult.php';
 
@@ -25,7 +30,11 @@ try {
 
     $_REQUEST = $_POST = $_GET = [];
     QUI\Permissions\Permission::setUser(QUI::getUsers()->getSystemUser());
-    $Result = (new Manager())->executeWithResult($argv[1] ?? 'skip', (float)($argv[2] ?? 300));
+    $Manager = new Manager();
+    $Result = $Manager->executeWithResult(
+        $argv[1] ?? 'skip',
+        (float)($argv[2] ?? 300)
+    );
 } catch (Throwable) {
     $Result = new ExecutionResult('execution_failed');
 }

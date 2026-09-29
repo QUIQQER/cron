@@ -93,9 +93,17 @@ class Manager
     private int $executedCount = 0;
     private int $failedCount = 0;
     private bool $executionInterrupted = false;
-    private bool $lastCronFailed = false;
+    protected bool $lastCronFailed = false;
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected array $lastCronDiagnostics = [];
+
+    protected bool $isolatedJobWorker = false;
     private ?Throwable $executionFailure = null;
     private bool $runningCycle = false;
+    private ?LockInterface $executionLock = null;
 
     /**
      * @var array<string, bool>|null
@@ -377,6 +385,7 @@ class Manager
 
             $phase = 'lock_failed';
             $Lock = $this->createExecutionLock();
+            $this->executionLock = $Lock;
             $deadline = hrtime(true) / 1e9 + $lockTimeout;
 
             while (true) {
@@ -463,6 +472,7 @@ class Manager
             }
 
             $this->runningCycle = false;
+            $this->executionLock = null;
         }
 
         return new ExecutionResult(
@@ -516,12 +526,15 @@ class Manager
                     self::$runtime['finished']++;
                     continue;
                 }
-            } catch (Throwable) {
+            } catch (Throwable $Error) {
                 // A schedule that cannot be evaluated is a failed candidate, never a successful run.
                 $this->scheduledCount++;
                 $this->failedCount++;
                 self::$runtime['finished']++;
-                Log::addError('Could not evaluate cron schedule (ID: ' . $entry['id'] . ').');
+                Diagnostics::logFailure(
+                    $entry['id'],
+                    Diagnostics::exceptionContext($Error, 'schedule')
+                );
                 continue;
             }
 
@@ -543,17 +556,26 @@ class Manager
                 self::$runtime['currentCronId'] = $entry['id'];
                 self::$runtime['currentCronTitle'] = $entry['title'];
                 $this->lastCronFailed = false;
-                $this->executeCron($entry['id']);
+                $this->lastCronDiagnostics = [];
+                $this->executeScheduledCron($entry['id']);
 
                 if ($this->lastCronFailed) {
                     $this->failedCount++;
                 } else {
                     $this->executedCount++;
                 }
-            } catch (Throwable) {
+            } catch (Throwable $Error) {
                 $this->failedCount++;
                 $message = 'Cron execution failed (ID: ' . $entry['id'] . ').';
-                Log::addError($message);
+                $diagnostics = $this->lastCronDiagnostics;
+
+                if ($diagnostics === []) {
+                    $diagnostics = Diagnostics::exceptionContext($Error, 'worker');
+                }
+
+                $diagnostics['callback'] = $entry['exec'] ?? '';
+
+                Diagnostics::logFailure($entry['id'], $diagnostics);
                 QUI::getMessagesHandler()->addError($message);
             }
 
@@ -568,6 +590,45 @@ class Manager
     public function stopAfterCurrentCron(): void
     {
         $this->stopExecutionAfterCurrentCron = true;
+    }
+
+    /**
+     * Execute scheduled jobs independently; direct single-job calls keep their existing API.
+     */
+    protected function executeScheduledCron(int $cronId): void
+    {
+        if (!$this->executionLock instanceof ExecutionLock) {
+            throw new \RuntimeException('Cron worker requires an acquired execution lock.');
+        }
+
+        $Runner = $this->createJobRunner();
+        $result = $Runner->run(
+            $cronId,
+            (string)QUI::getUserBySession()->getUUID(),
+            $this->isCliExecution(),
+            $this->executionLock->getWorkerContext()
+        );
+
+        $this->lastCronFailed = $result['failed'];
+        $this->lastCronDiagnostics = $Runner->getDiagnostics();
+
+        if ($result['stop']) {
+            $this->stopAfterCurrentCron();
+        }
+
+        if ($result['failed']) {
+            throw new \RuntimeException('Cron worker failed.');
+        }
+    }
+
+    protected function createJobRunner(): JobRunner
+    {
+        // PHP_BINARY is an FPM/CGI binary in web requests. Use the installation's CLI setting there.
+        $binary = PHP_SAPI === 'cli'
+            ? PHP_BINARY
+            : (string)(QUI::conf('globals', 'phpCommand') ?: 'php');
+
+        return new JobRunner($binary, dirname(__DIR__, 3) . '/bin/cron-job.php');
     }
 
     protected function shouldStopExecution(): bool
@@ -693,7 +754,16 @@ class Manager
 
         if (!is_callable($cronData['exec'])) {
             $this->lastCronFailed = true;
-            Log::addError('Cron is not callable "' . $cronData['title'] . '" (ID: ' . $cronId . ')');
+            $this->lastCronDiagnostics = [
+                'reason' => 'callback_not_callable',
+                'phase' => 'callback',
+                'callback' => $cronData['exec']
+            ];
+
+            if (!$this->isolatedJobWorker) {
+                Diagnostics::logFailure($cronId, $this->lastCronDiagnostics);
+            }
+
             return $this;
         }
 

@@ -71,4 +71,9 @@ class RecordingExecutionManager extends Manager
     {
         $this->executeCronList($entries, new DateTimeImmutable('+1 hour'));
     }
+
+    protected function executeScheduledCron(int $cronId): void
+    {
+        $this->executeCron($cronId);
+    }
 }

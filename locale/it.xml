@@ -29,7 +29,7 @@
             <it><![CDATA[Aggiornamenti di sicurezza e correzioni di errori]]></it>
         </locale>
         <locale name="settings.cron.security_update.description">
-            <it><![CDATA[Installa automaticamente aggiornamenti patch con correzioni di sicurezza ed errori.]]></it>
+            <it><![CDATA[Attiva l’attività cron per installare automaticamente aggiornamenti patch con correzioni di sicurezza ed errori. Imposta la pianificazione dell’esecuzione in «Cron / Attività ricorrenti». L’esecuzione delle attività cron deve essere configurata.]]></it>
         </locale>
         <locale name="exception.cron.system.delete">
             <it><![CDATA[I cron di sistema non possono essere eliminati. Puoi disattivarli.]]></it>

@@ -3,6 +3,7 @@
 namespace QUI\Cron\Console;
 
 use QUI\Cron\ExecutionResult;
+use QUI\Cron\WorkerProcess;
 use Throwable;
 
 /** Isolate bootstrap and job output from the public JSON channel. */
@@ -33,7 +34,11 @@ final class MachineRunner
                 continue;
             }
 
-            if ($name === '--lock-timeout' && is_string($value) && preg_match('/^\d+(?:\.\d+)?$/D', $value)) {
+            if (
+                $name === '--lock-timeout'
+                && is_string($value)
+                && preg_match('/^\d+(?:\.\d+)?$/D', $value)
+            ) {
                 $timeout = $value;
                 continue;
             }
@@ -46,38 +51,22 @@ final class MachineRunner
         }
 
         try {
-            $Process = proc_open([
-                PHP_BINARY, '-d', 'display_errors=0', '-d', 'log_errors=0',
-                $worker, $mode, $timeout
-            ], [
-                0 => ['file', '/dev/null', 'r'],
-                1 => ['file', '/dev/null', 'w'],
-                2 => ['file', '/dev/null', 'w'],
-                3 => ['pipe', 'w']
-            ], $pipes);
+            $Worker = new WorkerProcess();
+            $result = $Worker->run(PHP_BINARY, $worker, [$mode, $timeout]);
+            $report = $result['report'];
 
-            if (!is_resource($Process)) {
-                return new ExecutionResult('execution_failed', started: null);
-            }
-
-            // Raw output never leaves the subprocess. Only the bounded private report is read.
-            try {
-                $report = fgets($pipes[3], 8193);
-            } finally {
-                fclose($pipes[3]);
-                $exitCode = proc_close($Process);
-            }
-
-            if ($report === false || !str_ends_with($report, "\n")) {
+            if (strlen($report) > 8192 || !str_ends_with($report, "\n")) {
                 return new ExecutionResult('execution_failed', started: null);
             }
 
             $data = json_decode($report, true, flags: JSON_THROW_ON_ERROR);
 
             if (
-                !is_array($data) || ($data['contract_version'] ?? null) !== 1 ||
-                !is_string($data['status'] ?? null) || !array_key_exists('started', $data) ||
-                ($data['started'] !== null && !is_bool($data['started']))
+                !is_array($data)
+                || ($data['contract_version'] ?? null) !== 1
+                || !is_string($data['status'] ?? null)
+                || !array_key_exists('started', $data)
+                || ($data['started'] !== null && !is_bool($data['started']))
             ) {
                 return new ExecutionResult('execution_failed', started: null);
             }
@@ -98,7 +87,11 @@ final class MachineRunner
                 $data['started']
             );
 
-            return $Result->exitCode() === $exitCode ? $Result : new ExecutionResult('execution_failed', started: null);
+            if ($Result->exitCode() !== $result['exitCode']) {
+                return new ExecutionResult('execution_failed', started: null);
+            }
+
+            return $Result;
         } catch (Throwable) {
             return new ExecutionResult('execution_failed', started: null);
         }
