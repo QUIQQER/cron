@@ -20,6 +20,7 @@ class UpdateSettingsTest extends TestCase
     private QUI\Config $Config;
     private string $configFile;
     private ?User $previousUser = null;
+    private array $previousPermissionsCache = [];
 
     protected function setUp(): void
     {
@@ -29,6 +30,10 @@ class UpdateSettingsTest extends TestCase
         $Admin = $this->createMock(QUI\Users\User::class);
         $Admin->method('isSU')->willReturn(true);
         $Session->setValue($Users, $Admin);
+        $this->previousPermissionsCache = (new ReflectionProperty(
+            QUI::getPermissionManager(),
+            'permissionsCache'
+        ))->getValue(QUI::getPermissionManager());
 
         // Production rows stay invisible to this test and are restored by rollback.
         QUI::getDataBaseConnection()->beginTransaction();
@@ -52,6 +57,10 @@ class UpdateSettingsTest extends TestCase
     {
         QUI::getDataBaseConnection()->rollBack();
         (new ReflectionProperty(QUI::getUsers(), 'Session'))->setValue(QUI::getUsers(), $this->previousUser);
+        (new ReflectionProperty(QUI::getPermissionManager(), 'permissionsCache'))->setValue(
+            QUI::getPermissionManager(),
+            $this->previousPermissionsCache
+        );
         unlink($this->configFile);
     }
 
@@ -177,18 +186,11 @@ class UpdateSettingsTest extends TestCase
         }
     }
 
-    public function testSystemCronCannotBeDeletedOrRetargetedButScheduleCanChange(): void
+    public function testSystemCronCannotBeRetargetedButScheduleCanChange(): void
     {
         $this->Settings->setActive('check', true);
         $cron = $this->rows()[0];
         $id = (int)$cron['id'];
-
-        try {
-            $this->Manager->deleteCronIds([$id]);
-            self::fail('Deleting a system cron must fail.');
-        } catch (QUI\Exception) {
-            self::assertIsArray($this->Manager->getCronById($id));
-        }
 
         try {
             $this->Manager->edit($id, UpdateSettings::CRONS['update'], '5', '6', '*', '*', '*');
@@ -201,7 +203,37 @@ class UpdateSettingsTest extends TestCase
         self::assertSame('5', (string)$this->Manager->getCronById($id)['min']);
     }
 
-    public function testMixedDeletionIsRejectedBeforeDeletingCustomCrons(): void
+    /** @return iterable<string, array{bool}> */
+    public static function deletionActors(): iterable
+    {
+        yield 'superuser' => [true];
+        yield 'non-superuser with delete permission' => [false];
+    }
+
+    #[DataProvider('deletionActors')]
+    public function testOnlySuperuserCanDeleteSystemCron(bool $isSU): void
+    {
+        $this->Settings->setActive('check', true);
+        $id = (int)$this->rows()[0]['id'];
+        $this->setDeletionActor($isSU);
+
+        if ($isSU) {
+            $this->Manager->deleteCronIds([$id]);
+            self::assertFalse($this->Manager->getCronById($id));
+            return;
+        }
+
+        try {
+            $this->Manager->deleteCronIds([$id]);
+            self::fail('A non-superuser must not delete system crons.');
+        } catch (QUI\Exception $Exception) {
+            self::assertSame(QUI\Exception::class, $Exception::class);
+            self::assertIsArray($this->Manager->getCronById($id));
+        }
+    }
+
+    #[DataProvider('deletionActors')]
+    public function testMixedDeletionRequiresSuperuser(bool $isSU): void
     {
         $this->Settings->setActive('check', true);
         $system = $this->rows()[0];
@@ -212,6 +244,14 @@ class UpdateSettingsTest extends TestCase
         $Connection = QUI::getDataBaseConnection();
         $Connection->insert(QUI\Utils\Doctrine::quoteIdentifier(Manager::table()), $custom);
         $id = (int)$Connection->lastInsertId();
+        $this->setDeletionActor($isSU);
+
+        if ($isSU) {
+            $this->Manager->deleteCronIds([$id, (int)$system['id']]);
+            self::assertFalse($this->Manager->getCronById($id));
+            self::assertFalse($this->Manager->getCronById((int)$system['id']));
+            return;
+        }
 
         try {
             $this->Manager->deleteCronIds([$id, (int)$system['id']]);
@@ -223,6 +263,23 @@ class UpdateSettingsTest extends TestCase
 
         $this->Manager->deleteCronIds([PHP_INT_MAX, $id]);
         self::assertFalse($this->Manager->getCronById($id));
+    }
+
+    private function setDeletionActor(bool $isSU): void
+    {
+        $User = $this->createMock(QUI\Users\User::class);
+        $User->method('isSU')->willReturn($isSU);
+        $User->method('getUUID')->willReturn('phpunit-cron-deletion-actor');
+        (new ReflectionProperty(QUI::getUsers(), 'Session'))->setValue(QUI::getUsers(), $User);
+
+        $Manager = QUI::getPermissionManager();
+        $Cache = new ReflectionProperty($Manager, 'permissionsCache');
+        $permissions = $Cache->getValue($Manager);
+        $permissions['permission2user_' . $User->getUUID()] = ['quiqqer.cron.delete' => true];
+        $Cache->setValue($Manager, $permissions);
+
+        self::assertTrue(QUI\Permissions\Permission::hasPermission('quiqqer.cron.delete'));
+        self::assertSame($isSU, QUI\Permissions\Permission::isSU());
     }
 
     /** @return array<int, array<string, mixed>> */

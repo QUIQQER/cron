@@ -11,6 +11,8 @@ QUI::getAjax()->registerFunction(
     function () {
         $CronManager = new QUI\Cron\Manager();
         $list = $CronManager->getList();
+        $canDelete = QUI\Permissions\Permission::hasPermission('quiqqer.cron.delete');
+        $isSU = QUI\Permissions\Permission::isSU();
         $cronDefinitions = [];
         $Locale = QUI::getLocale();
         $Formatter = $Locale->getDateFormatter(
@@ -47,6 +49,8 @@ QUI::getAjax()->registerFunction(
 
             $list[$key]['cronType'] = $cronDefinition['type']
                 ?? QUI\Cron\Manager::CRON_TYPE_CUSTOM;
+            $list[$key]['canDelete'] = $canDelete
+                && ($isSU || $list[$key]['cronType'] !== QUI\Cron\Manager::CRON_TYPE_SYSTEM);
             $list[$key]['desc'] = $cronDefinition['description'] ?? '';
             $list[$key]['cliOnly'] = $cronDefinition['cliOnly'] ?? false;
 

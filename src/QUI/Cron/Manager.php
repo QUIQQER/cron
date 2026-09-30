@@ -316,12 +316,13 @@ class Manager
     public function deleteCronIds(array $ids): void
     {
         Permission::checkPermission('quiqqer.cron.delete');
+        $isSU = Permission::isSU();
 
         // Validate the complete selection before deleting anything.
         foreach ($ids as $id) {
             $cron = $this->getCronById((int)$id);
 
-            if (is_array($cron) && $this->isSystemCron((string)$cron['exec'])) {
+            if (!$isSU && is_array($cron) && $this->isSystemCron((string)$cron['exec'])) {
                 throw new QUI\Exception(['quiqqer/cron', 'exception.cron.system.delete']);
             }
         }
