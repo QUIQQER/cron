@@ -10,6 +10,8 @@ use QUI\Cron\Manager;
 use QUI\Cron\SystemUpdateRunningException;
 use QUI\Interfaces\Users\User;
 use ReflectionProperty;
+use Symfony\Component\Process\InputStream;
+use Symfony\Component\Process\Process;
 use QUITests\Integration\Cron\Fixtures\DatabaseManager;
 use QUITests\Integration\Cron\Fixtures\DisappearingDefinitionManager;
 use QUITests\Integration\Cron\Fixtures\ExecutableCron;
@@ -300,6 +302,112 @@ class ManagerDatabaseTest extends TestCase
 
         self::assertCount(1, ExecutableCron::$calls);
         self::assertSame(6, $this->countFixtureHistory());
+    }
+
+    #[Test]
+    public function maintenanceSkipsCycleAndSingleJobWithoutRecordingSuccess(): void
+    {
+        $this->makeFixtureDue();
+        $before = (new Manager())->getCronById($this->cronId);
+        $Input = new InputStream();
+        $Owner = $this->maintenanceWorker('hold');
+        $Owner->setEnv(['QUIQQER_MAINTENANCE_TOKEN' => false]);
+        $Owner->setInput($Input);
+
+        try {
+            $Owner->start();
+            self::assertTrue($Owner->waitUntil(static fn(string $type, string $output): bool =>
+                str_contains($output, 'ready')));
+
+            $Result = (new IsolatedCycleManager($this->cronId))->executeWithResult();
+
+            self::assertSame('system_update_running', $Result->status);
+            self::assertFalse($Result->started);
+            self::assertSame(0, $Result->failed);
+
+            try {
+                (new Manager())->executeCron($this->cronId);
+                self::fail('Maintenance must prevent callback execution.');
+            } catch (SystemUpdateRunningException) {
+                self::assertSame([], ExecutableCron::$calls);
+                self::assertSame(5, $this->countFixtureHistory());
+                self::assertSame($before['lastexec'], (new Manager())->getCronById($this->cronId)['lastexec']);
+            }
+        } finally {
+            $Input->close();
+            $Owner->stop();
+        }
+
+        (new Manager())->executeCron($this->cronId);
+
+        self::assertCount(1, ExecutableCron::$calls);
+        self::assertSame(6, $this->countFixtureHistory());
+    }
+
+    #[Test]
+    public function singleJobHoldsMaintenanceLockAndAllowsItsOwnUpdateChildren(): void
+    {
+        $probe = function (): void {
+            $Other = $this->maintenanceWorker();
+            $Other->setEnv(['QUIQQER_MAINTENANCE_TOKEN' => false]);
+            $Other->run();
+
+            self::assertSame(3, $Other->getExitCode(), $Other->getErrorOutput());
+            self::assertSame('busy', $Other->getOutput());
+
+            $Child = $this->maintenanceWorker();
+            $Child->mustRun();
+
+            self::assertSame("ready\n", $Child->getOutput());
+        };
+        $Manager = new class ($probe) extends Manager {
+            public function __construct(private readonly \Closure $probe)
+            {
+            }
+
+            public function getCronById(int $cronId): array | false
+            {
+                ($this->probe)();
+
+                return parent::getCronById($cronId);
+            }
+        };
+
+        $Manager->executeCron($this->cronId);
+
+        self::assertCount(1, ExecutableCron::$calls);
+        self::assertSame(6, $this->countFixtureHistory());
+        $Released = $this->maintenanceWorker();
+        $Released->setEnv(['QUIQQER_MAINTENANCE_TOKEN' => false]);
+        $Released->mustRun();
+    }
+
+    #[Test]
+    public function failedCallbackReleasesMaintenanceLockWithoutSuccessHistory(): void
+    {
+        $this->updateFixtureParams(json_encode([
+            ['name' => 'mode', 'value' => 'error']
+        ], JSON_THROW_ON_ERROR));
+
+        try {
+            (new Manager())->executeCron($this->cronId);
+            self::fail('Expected the callback to fail.');
+        } catch (\Error $Error) {
+            self::assertStringContainsString('Cron fixture failure', $Error->getMessage());
+        }
+
+        self::assertSame(5, $this->countFixtureHistory());
+        $Probe = $this->maintenanceWorker();
+        $Probe->setEnv(['QUIQQER_MAINTENANCE_TOKEN' => false]);
+        $Probe->mustRun();
+    }
+
+    private function maintenanceWorker(string $operation = 'probe'): Process
+    {
+        return new Process(
+            [PHP_BINARY, __DIR__ . '/Fixtures/maintenance-worker.php', CMS_DIR, VAR_DIR, $operation],
+            timeout: 10
+        );
     }
 
     #[Test]

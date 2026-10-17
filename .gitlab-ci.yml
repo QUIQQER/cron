@@ -5,3 +5,23 @@ include:
       php-83: true
       php-84: true
       php-85: true
+
+# The image's scheduled updates must not change the installation used by tests.
+.without-background-cron:
+  before_script:
+    - sudo -n service cron stop
+
+phpstan:
+  extends: .without-background-cron
+
+phpunit-php8.2:
+  extends: .without-background-cron
+
+phpunit-php8.3:
+  extends: .without-background-cron
+
+phpunit-php8.4:
+  extends: .without-background-cron
+
+phpunit-php8.5:
+  extends: .without-background-cron
