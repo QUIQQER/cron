@@ -16,6 +16,8 @@ use QUI;
 use QUI\Database\Exception;
 use QUI\Permissions\Permission;
 use QUI\System\Log;
+use QUI\System\MaintenanceBusyException;
+use QUI\System\MaintenanceLock;
 use Symfony\Component\Lock\LockInterface;
 use Throwable;
 
@@ -35,8 +37,6 @@ use function microtime;
 use function round;
 use function time;
 use function trim;
-
-use const VAR_DIR;
 
 /**
  * Cron Manager
@@ -647,10 +647,7 @@ class Manager
     /** @phpstan-impure Reads update state changed by other processes. */
     protected function isSystemUpdateRunning(): bool
     {
-        $Repository = new QUI\System\Update\RunRepository(VAR_DIR . 'update/runs/');
-        $runs = $Repository->cleanupAndFindActive(time(), 86400);
-
-        return count($runs['active']) > 0;
+        return MaintenanceLock::isBusy();
     }
 
     /**
@@ -727,6 +724,15 @@ class Manager
     {
         Permission::checkPermission('quiqqer.cron.execute');
 
+        try {
+            return MaintenanceLock::run(fn(): static => $this->executeCronLocked($cronId));
+        } catch (MaintenanceBusyException) {
+            throw new SystemUpdateRunningException();
+        }
+    }
+
+    private function executeCronLocked(int $cronId): static
+    {
         if ($this->isSystemUpdateRunning()) {
             throw new SystemUpdateRunningException();
         }
