@@ -231,8 +231,21 @@ class CronServiceTest extends TestCase
         ]);
     }
 
+    /**
+     * @return array<string, array{userName: string}>
+     */
+    public static function registrationUserNameProvider(): array
+    {
+        return [
+            'username' => ['userName' => 'admin'],
+            'full name' => ['userName' => 'Max Mustermann'],
+            'special characters' => ['userName' => 'Jörg Müller & Verein + Vorstand']
+        ];
+    }
+
+    #[DataProvider('registrationUserNameProvider')]
     #[Test]
-    public function registrationCanUseLocalResponseAndStoresRevokeToken(): void
+    public function registrationCanUseLocalResponseAndStoresRevokeToken(string $userName): void
     {
         $function = 'package_pcsg_cronservice_ajax_register';
         $this->writeAjaxResponse([
@@ -246,7 +259,20 @@ class CronServiceTest extends TestCase
         $this->replacePackageDirectory($this->temporaryDirectory);
         $Service = $this->createServiceWithoutConstructor('example.test', '/packages/');
 
-        $Service->register('admin@example.test');
+        $User = $this->createMock(QUI\Users\User::class);
+        $User->method('getName')->willReturn($userName);
+        $User->method('getLang')->willReturn('de');
+
+        $Users = QUI::getUsers();
+        $SessionProperty = new ReflectionProperty($Users, 'Session');
+        $PreviousUser = $SessionProperty->getValue($Users);
+        $SessionProperty->setValue($Users, $User);
+
+        try {
+            $Service->register('admin@example.test');
+        } finally {
+            $SessionProperty->setValue($Users, $PreviousUser);
+        }
 
         self::assertSame(
             'local-revoke-token',
