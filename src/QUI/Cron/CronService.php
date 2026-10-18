@@ -263,7 +263,7 @@ class CronService
             "&email=" . urlencode($email) .
             "&packageDir=" . urlencode($packageDir) .
             "&https=" . ($https ? "1" : "0") .
-            "&user=" . QUI::getUserBySession()->getName();
+            "&user=" . urlencode(QUI::getUserBySession()->getName());
 
         $curl = curl_init();
         curl_setopt_array($curl, [
