@@ -345,6 +345,41 @@ class ManagerDatabaseTest extends TestCase
     }
 
     #[Test]
+    public function pendingMaintenanceStopsNewCyclesAndSingleJobsWithoutChangingHistory(): void
+    {
+        $Admission = QUI\Lock\Locker::createFilesystemLock(
+            'system-maintenance-admission',
+            VAR_DIR . 'locks/'
+        );
+        $before = (new Manager())->getCronById($this->cronId);
+        self::assertTrue($Admission->acquire());
+
+        try {
+            // The current cron has finished, but maintenance is next in line.
+            // No maintenance owner lock is held: admission alone must stop new jobs.
+            $Result = (new Manager())->executeWithResult();
+            self::assertSame('system_update_running', $Result->status);
+            self::assertFalse($Result->started);
+            self::assertSame(0, $Result->failed);
+
+            try {
+                (new Manager())->executeCron($this->cronId);
+                self::fail('New jobs must yield to pending maintenance.');
+            } catch (SystemUpdateRunningException) {
+                self::assertSame([], ExecutableCron::$calls);
+                self::assertSame(5, $this->countFixtureHistory());
+                self::assertSame($before['lastexec'], (new Manager())->getCronById($this->cronId)['lastexec']);
+            }
+        } finally {
+            $Admission->release();
+        }
+
+        (new Manager())->executeCron($this->cronId);
+        self::assertCount(1, ExecutableCron::$calls);
+        self::assertSame(6, $this->countFixtureHistory());
+    }
+
+    #[Test]
     public function singleJobHoldsMaintenanceLockAndAllowsItsOwnUpdateChildren(): void
     {
         $probe = function (): void {
