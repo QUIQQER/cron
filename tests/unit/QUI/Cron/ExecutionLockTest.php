@@ -2,11 +2,14 @@
 
 namespace QUITests\Unit\Cron;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use QUI\Cron\ExecutionLock;
 use QUITests\Unit\Cron\Fixtures\ResultManager;
 use Symfony\Component\Lock\LockFactory;
 use Symfony\Component\Lock\Store\FlockStore;
+use Symfony\Component\Process\InputStream;
+use Symfony\Component\Process\Process;
 
 require_once __DIR__ . '/Fixtures/ResultManager.php';
 
@@ -14,6 +17,7 @@ class ExecutionLockTest extends TestCase
 {
     private string $directory;
 
+    /** @var list<array{Process, InputStream}> */
     private array $workers = [];
 
     protected function setUp(): void
@@ -24,11 +28,9 @@ class ExecutionLockTest extends TestCase
 
     protected function tearDown(): void
     {
-        foreach ($this->workers as [$Process, $pipes]) {
-            fclose($pipes[0]);
-            fclose($pipes[1]);
-            fclose($pipes[2]);
-            proc_close($Process);
+        foreach ($this->workers as [$Process, $Input]) {
+            $Input->close();
+            $Process->stop(0.1);
         }
 
         foreach (glob($this->directory . '/locks/*') ?: [] as $file) {
@@ -53,7 +55,7 @@ class ExecutionLockTest extends TestCase
     public function testSurvivingWorkerKeepsLockAfterSupervisorIsKilled(): void
     {
         $Owner = $this->startOwner('child');
-        self::assertTrue(proc_terminate($Owner, 9));
+        $Owner->signal(9);
 
         // Readiness is emitted by the child after it acquired its shared guard.
         $Contender = $this->lock();
@@ -92,27 +94,85 @@ class ExecutionLockTest extends TestCase
         self::assertTrue($this->lock()->acquire());
     }
 
-    private function startOwner(string $mode = 'hold'): mixed
+    #[DataProvider('guardOwners')]
+    public function testUnrelatedChildDoesNotRetainTheReleasedCycleGuard(string $mode): void
     {
-        $Process = proc_open(
+        $Owner = $this->lock();
+        $Contender = $this->lock();
+
+        if ($mode === 'successor') {
+            self::assertTrue($Owner->acquire());
+            $Owner->release();
+        }
+
+        self::assertTrue($Owner->acquire());
+        $workerHandle = null;
+
+        if ($mode === 'worker') {
+            $context = $Owner->getWorkerContext();
+            $workerHandle = ExecutionLock::holdWorkerLock($context['path'], $context['token']);
+            $Owner->release();
+        }
+
+        $Input = new InputStream();
+        $Child = new Process(
+            [PHP_BINARY, __DIR__ . '/Fixtures/idle-child.php'],
+            input: $Input,
+            timeout: 10
+        );
+        $this->workers[] = [$Child, $Input];
+
+        try {
+            $Child->start();
+            self::assertTrue($Child->waitUntil(static fn(string $type, string $output): bool =>
+                str_contains($output, 'READY')));
+            $Owner->release();
+
+            if ($workerHandle !== null) {
+                fclose($workerHandle);
+                $workerHandle = null;
+            }
+
+            self::assertTrue($Child->isRunning());
+            self::assertTrue($Contender->acquire(), 'An unrelated child must not inherit the cycle guard.');
+        } finally {
+            $Owner->release();
+            $Contender->release();
+
+            if ($workerHandle !== null) {
+                fclose($workerHandle);
+            }
+        }
+    }
+
+    /** @return array<string, array{string}> */
+    public static function guardOwners(): array
+    {
+        return [
+            'new owner' => ['new'],
+            'successor owner' => ['successor'],
+            'authorized worker' => ['worker']
+        ];
+    }
+
+    private function startOwner(string $mode = 'hold'): Process
+    {
+        $Input = new InputStream();
+        $Process = new Process(
             [
                 PHP_BINARY,
                 __DIR__ . '/Fixtures/lock-worker.php',
                 $this->directory,
                 $mode
             ],
-            [
-                0 => ['pipe', 'r'],
-                1 => ['pipe', 'w'],
-                2 => ['pipe', 'w']
-            ],
-            $pipes
+            input: $Input,
+            timeout: 10
         );
 
-        self::assertIsResource($Process);
-        $this->workers[] = [$Process, $pipes];
-        stream_set_timeout($pipes[1], 5);
-        self::assertSame("READY\n", fgets($pipes[1]));
+        $this->workers[] = [$Process, $Input];
+        $Process->start();
+        self::assertTrue($Process->waitUntil(static fn(string $type, string $output): bool =>
+            str_contains($output, 'READY')));
 
         return $Process;
     }
@@ -163,7 +223,7 @@ class ExecutionLockTest extends TestCase
     public function testProcessDeathAutomaticallyReleasesLock(): void
     {
         $Owner = $this->startOwner();
-        self::assertTrue(proc_terminate($Owner, 9));
+        $Owner->signal(9);
         $Manager = new ResultManager($this->lock());
         self::assertSame('executed', $Manager->executeWithResult('wait', 3)->status);
     }

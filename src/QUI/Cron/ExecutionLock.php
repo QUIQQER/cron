@@ -47,12 +47,13 @@ final class ExecutionLock implements LockInterface
 
         try {
             // Like FlockStore, allow different CLI/web users to share the installation lock.
-            $handle = @fopen($this->workerLockPath, 'x+');
+            // Descendants join explicitly with their token; unrelated children must not inherit this handle.
+            $handle = @fopen($this->workerLockPath, 'x+e');
 
             if ($handle !== false) {
                 chmod($this->workerLockPath, 0666);
             } else {
-                $handle = @fopen($this->workerLockPath, 'r+') ?: @fopen($this->workerLockPath, 'r');
+                $handle = @fopen($this->workerLockPath, 'r+e') ?: @fopen($this->workerLockPath, 're');
             }
 
             if ($handle === false) {
@@ -107,7 +108,7 @@ final class ExecutionLock implements LockInterface
      */
     public static function holdWorkerLock(string $path, string $token)
     {
-        $handle = @fopen($path, 'r');
+        $handle = @fopen($path, 're');
 
         if ($handle === false) {
             throw new RuntimeException('Cannot open cron worker lock.');
