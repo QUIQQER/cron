@@ -5,6 +5,29 @@ Related: [quiqqer/cron#62](https://dev.quiqqer.com/quiqqer/cron/-/work_items/62)
 Job isolation: [walking-family-project#219](https://dev.quiqqer.com/pcsg/projects/walking-family-project/-/work_items/219).
 Process execution: [quiqqer/core#1466](https://dev.quiqqer.com/quiqqer/core/-/work_items/1466).
 
+## Coordination with setup and installation
+
+Core setup, package installation, Composer and system updates wait up to 60 seconds for running
+work to release the installation's `MaintenanceLock`. A waiting maintenance caller reserves
+admission, so new cron cycles and jobs yield immediately instead of overtaking it. An active job
+and its token-authorized update or setup children may finish. A separate update reservation still
+blocks unrelated maintenance, including while its runner is paused between processes.
+
+Cron uses the non-blocking `MaintenanceLock::run()` path. A skipped job does not update `lastexec`
+or write successful history and remains due for a later cycle. Waiting for the cron cycle lock
+with `--lock-mode=wait` does not bypass pending maintenance. If a running job exceeds the Core
+maintenance timeout, the maintenance operation fails safely without starting its callback; it
+does not kill the job or clear another process's lock.
+
+Custom installation entrypoints can use `MaintenanceLock::runWhenAvailable($callback, timeout: 60)`
+to opt into the same handover. Children inherit the existing token and join without waiting.
+The waiting handover requires a Core release providing that method; the cron worker guard fix
+uses no new Core API and does not raise the package's Core requirement.
+
+The cron cycle's worker guard closes on exec. Authorized workers open their own shared guard with
+the cycle token, so they still protect a cycle after supervisor death. Ordinary child processes
+do not keep a completed cycle locked simply by inheriting an open file descriptor.
+
 ## Machine CLI
 
 From the QUIQQER installation directory, run:
@@ -240,4 +263,7 @@ lock so installed jobs cannot run. The new Symfony Lock dependency is explicit a
 the recently added Core process-lock API.
 
 Run `./tools/phpcs`, `./tools/phpstan`, and `./tools/phpunit` (the integration suite should pass twice).
+Use a disposable QUIQQER test installation with its own database and no background scheduler.
+The entrypoint tests start real worker processes that load the installation's `header.php`;
+overriding only PHPUnit's bootstrap does not isolate those workers from the normal installation.
 Use the compatibility decision and the approved local-lock deviation above in the merge request description.
