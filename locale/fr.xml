@@ -3,27 +3,20 @@
          xsi:noNamespaceSchemaLocation="https://www.quiqqer.com/docs/schemas/2.x/locale.xsd">
 <locales>
     <groups name="quiqqer/cron" datatype="php,js">
+
+        <locale name="message.cron.admin.info.24h" context="administration" html="true">
+<fr><![CDATA[<p>Aucune tâche cron n’a été exécutée au cours des dernières 24 heures.</p><p>Les tâches cron sont peut-être mal configurées.</p><br/><p>Cela peut empêcher l’exécution de tâches système importantes et entraîner des erreurs de fonctionnement.</p><br/><p><b>Veuillez contacter un administrateur en lui communiquant ce message d’erreur.</b></p>]]></fr>
+        </locale>
+        <locale name="message.cron.cli_only" context="administration">
+<fr><![CDATA[Cette tâche peut uniquement être exécutée en ligne de commande.]]></fr>
+        </locale>
+    </groups>
+    <groups name="quiqqer/cron" datatype="php">
         <locale name="package.title">
 <fr><![CDATA[QUIQQER - Cron]]></fr>
         </locale>
         <locale name="package.description" html="true">
 <fr><![CDATA[Ce module permet de planifier, de gérer et d’exécuter facilement des tâches récurrentes, comme des opérations de maintenance ou la publication différée de certaines pages.]]></fr>
-        </locale>
-
-        <locale name="message.cron.admin.info.24h" html="true">
-<fr><![CDATA[<p>Aucune tâche cron n’a été exécutée au cours des dernières 24 heures.</p><p>Les tâches cron sont peut-être mal configurées.</p><br/><p>Cela peut empêcher l’exécution de tâches système importantes et entraîner des erreurs de fonctionnement.</p><br/><p><b>Veuillez contacter un administrateur en lui communiquant ce message d’erreur.</b></p>]]></fr>
-        </locale>
-        <locale name="message.cron.admin.info.24h.title">
-<fr><![CDATA[Attention !]]></fr>
-        </locale>
-        <locale name="message.cron.admin.info.24h.text">
-<fr><![CDATA[Les tâches cron n’ont pas été exécutées correctement.]]></fr>
-        </locale>
-        <locale name="message.cron.admin.info.24h.btn.submit">
-<fr><![CDATA[Compris]]></fr>
-        </locale>
-        <locale name="message.cron.cli_only">
-<fr><![CDATA[Cette tâche peut uniquement être exécutée en ligne de commande.]]></fr>
         </locale>
         <locale name="settings.cron.security_update">
             <fr><![CDATA[Mises à jour de sécurité et corrections de bugs]]></fr>
@@ -37,8 +30,7 @@
         <locale name="exception.cron.system.change">
             <fr><![CDATA[La tâche d’un cron système ne peut pas être modifiée.]]></fr>
         </locale>
-    </groups>
-    <groups name="quiqqer/cron" datatype="php">
+
         <locale name="message.ajax.cronservice.general_error">
 <fr><![CDATA[L’opération a échoué. Veuillez réessayer ou contacter support@pcsg.de.]]></fr>
         </locale>
@@ -114,9 +106,6 @@
 <!-- region Cleanup-Crons -->
         <locale name="cron.cleanupUploads.title">
 <fr><![CDATA[Nettoyer le dossier des téléversements]]></fr>
-        </locale>
-        <locale name="cron.cron.cleanupUploads.description">
-<fr><![CDATA[Supprime du dossier des téléversements les fichiers datant de plus d’un jour.]]></fr>
         </locale>
 
 <!-- region Cleanup Temp-Folder -->
@@ -271,9 +260,6 @@
         <locale name="cron.updateExecute.title">
 <fr><![CDATA[Mise à jour automatique]]></fr>
         </locale>
-        <locale name="cron.updateExecute..description">
-<fr><![CDATA[Effectue les mises à jour de QUIQQER lorsqu’elles sont disponibles.]]></fr>
-        </locale>
 
         <locale name="update.mail.error.subject">
 <fr><![CDATA[Erreur de mise à jour de QUIQQER]]></fr>
@@ -314,6 +300,19 @@
 <fr><![CDATA[Votre système QUIQQER sera mis à jour automatiquement dès que de nouvelles mises à jour seront disponibles.]]></fr>
         </locale>
 
+        <locale name="cron.cleanupUploads.description">
+<fr><![CDATA[Supprime du dossier des téléversements les fichiers datant de plus d’un jour.]]></fr>
+        </locale>
+        <locale name="cron.updateExecute.description">
+<fr><![CDATA[Effectue les mises à jour de QUIQQER lorsqu’elles sont disponibles.]]></fr>
+        </locale>
+        <locale name="cron.cleanup.externalImages.title">
+<fr><![CDATA[Mettre à jour les images externes]]></fr>
+        </locale>
+        <locale name="cron.cleanup.externalImages.description">
+<fr><![CDATA[Met à jour les images externes dans les médiathèques de tous les projets.]]></fr>
+        </locale>
+
         <locale name="cron.securityUpdateCron.title">
 <fr><![CDATA[Mise à jour de sécurité automatique]]></fr>
         </locale>
@@ -323,350 +322,342 @@
 
     </groups>
     <groups name="quiqqer/cron" datatype="js">
-        <locale name="cron.id">
+        <locale name="message.cron.admin.info.24h.title" context="administration">
+<fr><![CDATA[Attention !]]></fr>
+        </locale>
+        <locale name="message.cron.admin.info.24h.text" context="administration">
+<fr><![CDATA[Les tâches cron n’ont pas été exécutées correctement.]]></fr>
+        </locale>
+        <locale name="message.cron.admin.info.24h.btn.submit" context="administration">
+<fr><![CDATA[Compris]]></fr>
+        </locale>
+
+        <locale name="cron.id" context="administration">
 <fr><![CDATA[ID de la tâche]]></fr>
         </locale>
-        <locale name="cron.title">
+        <locale name="cron.title" context="administration">
 <fr><![CDATA[Titre de la tâche]]></fr>
         </locale>
-        <locale name="cron.type">
+        <locale name="cron.type" context="administration">
 <fr><![CDATA[Type]]></fr>
         </locale>
-        <locale name="cron.start_date">
+        <locale name="cron.start_date" context="administration">
 <fr><![CDATA[Début]]></fr>
         </locale>
-        <locale name="cron.finish_date">
+        <locale name="cron.finish_date" context="administration">
 <fr><![CDATA[Fin]]></fr>
         </locale>
-        <locale name="cron.desc">
+        <locale name="cron.desc" context="administration">
 <fr><![CDATA[Description de la tâche]]></fr>
         </locale>
-        <locale name="cron.min">
+        <locale name="cron.min" context="administration">
 <fr><![CDATA[min]]></fr>
         </locale>
-        <locale name="cron.hour">
+        <locale name="cron.hour" context="administration">
 <fr><![CDATA[h]]></fr>
         </locale>
-        <locale name="cron.day">
+        <locale name="cron.day" context="administration">
 <fr><![CDATA[Jour]]></fr>
         </locale>
-        <locale name="cron.month">
+        <locale name="cron.month" context="administration">
 <fr><![CDATA[Mois]]></fr>
         </locale>
-        <locale name="cron.dayOfWeek">
+        <locale name="cron.dayOfWeek" context="administration">
 <fr><![CDATA[Jour de la semaine]]></fr>
         </locale>
-        <locale name="cron.execute">
+        <locale name="cron.execute" context="administration">
 <fr><![CDATA[Exec]]></fr>
         </locale>
-        <locale name="cron.params">
+        <locale name="cron.params" context="administration">
 <fr><![CDATA[Paramètres]]></fr>
         </locale>
-        <locale name="cron.interval">
+        <locale name="cron.interval" context="administration">
 <fr><![CDATA[Intervalle]]></fr>
         </locale>
-        <locale name="cron.window.delete.cron.title">
+        <locale name="cron.window.delete.cron.title" context="administration">
 <fr><![CDATA[Supprimer des tâches]]></fr>
         </locale>
-        <locale name="cron.window.delete.cron.text">
+        <locale name="cron.window.delete.cron.text" context="administration">
 <fr><![CDATA[<p>Voulez-vous vraiment supprimer les tâches suivantes ?</p>]]></fr>
         </locale>
-        <locale name="cron.window.delete.cron.information">
+        <locale name="cron.window.delete.cron.information" context="administration">
 <fr><![CDATA[<p>Tâches à supprimer : <b>[ids]</b></p><p>Notez que les tâches ne pourront pas être restaurées.</p>]]></fr>
         </locale>
-        <locale name="cron.window.add.cron.title">
+        <locale name="cron.window.add.cron.title" context="administration">
 <fr><![CDATA[Ajouter une tâche]]></fr>
         </locale>
-        <locale name="cron.window.edit.cron.title">
+        <locale name="cron.window.edit.cron.title" context="administration">
 <fr><![CDATA[Modifier la tâche]]></fr>
         </locale>
-        <locale name="cron.panel.manager.btn.toggle">
+        <locale name="cron.panel.manager.btn.toggle" context="administration">
 <fr><![CDATA[Activer / désactiver la tâche]]></fr>
         </locale>
-        <locale name="cron.panel.manager.btn.execute">
+        <locale name="cron.panel.manager.btn.execute" context="administration">
 <fr><![CDATA[Exécuter la tâche]]></fr>
         </locale>
-        <locale name="cron.panel.manager.btn.add">
+        <locale name="cron.panel.manager.btn.add" context="administration">
 <fr><![CDATA[Ajouter une tâche]]></fr>
         </locale>
-        <locale name="cron.panel.manager.btn.edit">
+        <locale name="cron.panel.manager.btn.edit" context="administration">
 <fr><![CDATA[Modifier la tâche sélectionnée]]></fr>
         </locale>
-        <locale name="cron.panel.manager.btn.delete">
+        <locale name="cron.panel.manager.btn.delete" context="administration">
 <fr><![CDATA[Supprimer les tâches sélectionnées]]></fr>
         </locale>
-        <locale name="cron.panel.manager.btn.filter">
+        <locale name="cron.panel.manager.btn.filter" context="administration">
 <fr><![CDATA[Filtrer par type de tâche]]></fr>
         </locale>
-        <locale name="cron.panel.manager.filter.type.all">
+        <locale name="cron.panel.manager.filter.type.all" context="administration">
 <fr><![CDATA[Tous]]></fr>
         </locale>
-        <locale name="cron.panel.manager.filter.type.system">
+        <locale name="cron.panel.manager.filter.type.system" context="administration">
 <fr><![CDATA[Système]]></fr>
         </locale>
-        <locale name="cron.panel.manager.filter.type.custom">
+        <locale name="cron.panel.manager.filter.type.custom" context="administration">
 <fr><![CDATA[Personnalisé]]></fr>
         </locale>
-        <locale name="cron.panel.manager.btn.history">
+        <locale name="cron.panel.manager.btn.history" context="administration">
 <fr><![CDATA[Historique des tâches]]></fr>
         </locale>
 
 
-        <locale name="permission.quiqqer.cron._header">
+        <locale name="permission.quiqqer.cron._header" context="administration">
 <fr><![CDATA[Tâches]]></fr>
         </locale>
-        <locale name="permission.quiqqer.cron.execute">
+        <locale name="permission.quiqqer.cron.execute" context="administration">
 <fr><![CDATA[Peut exécuter des tâches.]]></fr>
         </locale>
-        <locale name="permission.quiqqer.cron.add">
+        <locale name="permission.quiqqer.cron.add" context="administration">
 <fr><![CDATA[Peut ajouter des tâches.]]></fr>
         </locale>
-        <locale name="permission.quiqqer.cron.edit">
+        <locale name="permission.quiqqer.cron.edit" context="administration">
 <fr><![CDATA[Peut modifier des tâches.]]></fr>
         </locale>
-        <locale name="permission.quiqqer.cron.delete">
+        <locale name="permission.quiqqer.cron.delete" context="administration">
 <fr><![CDATA[Peut supprimer des tâches.]]></fr>
         </locale>
-        <locale name="permission.quiqqer.cron.activate">
+        <locale name="permission.quiqqer.cron.activate" context="administration">
 <fr><![CDATA[Peut activer des tâches.]]></fr>
         </locale>
-        <locale name="permission.quiqqer.cron.deactivate">
+        <locale name="permission.quiqqer.cron.deactivate" context="administration">
 <fr><![CDATA[Peut désactiver des tâches.]]></fr>
         </locale>
 
-        <locale name="controls.crontime.label.on">
+        <locale name="controls.crontime.label.on" context="administration">
 <fr><![CDATA[Le]]></fr>
         </locale>
-        <locale name="controls.crontime.intervalselect.option.everyminute">
+        <locale name="controls.crontime.intervalselect.option.everyminute" context="administration">
 <fr><![CDATA[Chaque minute]]></fr>
         </locale>
-        <locale name="controls.crontime.intervalselect.option.hourly">
+        <locale name="controls.crontime.intervalselect.option.hourly" context="administration">
 <fr><![CDATA[Chaque heure]]></fr>
         </locale>
-        <locale name="controls.crontime.intervalselect.option.daily">
+        <locale name="controls.crontime.intervalselect.option.daily" context="administration">
 <fr><![CDATA[Chaque jour]]></fr>
         </locale>
-        <locale name="controls.crontime.intervalselect.option.weekly">
+        <locale name="controls.crontime.intervalselect.option.weekly" context="administration">
 <fr><![CDATA[Chaque semaine]]></fr>
         </locale>
-        <locale name="controls.crontime.intervalselect.option.monthly">
+        <locale name="controls.crontime.intervalselect.option.monthly" context="administration">
 <fr><![CDATA[Chaque mois]]></fr>
         </locale>
-        <locale name="controls.crontime.intervalselect.option.yearly">
+        <locale name="controls.crontime.intervalselect.option.yearly" context="administration">
 <fr><![CDATA[Chaque année]]></fr>
         </locale>
-        <locale name="controls.crontime.intervalselect.option.cron">
+        <locale name="controls.crontime.intervalselect.option.cron" context="administration">
 <fr><![CDATA[Format cron]]></fr>
         </locale>
-        <locale name="controls.crontime.dayofweek.su">
+        <locale name="controls.crontime.dayofweek.su" context="administration">
 <fr><![CDATA[Dimanche]]></fr>
         </locale>
-        <locale name="controls.crontime.dayofweek.mo">
+        <locale name="controls.crontime.dayofweek.mo" context="administration">
 <fr><![CDATA[Lundi]]></fr>
         </locale>
-        <locale name="controls.crontime.dayofweek.tu">
+        <locale name="controls.crontime.dayofweek.tu" context="administration">
 <fr><![CDATA[Mardi]]></fr>
         </locale>
-        <locale name="controls.crontime.dayofweek.we">
+        <locale name="controls.crontime.dayofweek.we" context="administration">
 <fr><![CDATA[Mercredi]]></fr>
         </locale>
-        <locale name="controls.crontime.dayofweek.th">
+        <locale name="controls.crontime.dayofweek.th" context="administration">
 <fr><![CDATA[Jeudi]]></fr>
         </locale>
-        <locale name="controls.crontime.dayofweek.fr">
+        <locale name="controls.crontime.dayofweek.fr" context="administration">
 <fr><![CDATA[Vendredi]]></fr>
         </locale>
-        <locale name="controls.crontime.dayofweek.sa">
+        <locale name="controls.crontime.dayofweek.sa" context="administration">
 <fr><![CDATA[Samedi]]></fr>
         </locale>
-        <locale name="controls.crontime.month.1">
+        <locale name="controls.crontime.month.1" context="administration">
 <fr><![CDATA[janvier]]></fr>
         </locale>
-        <locale name="controls.crontime.month.2">
+        <locale name="controls.crontime.month.2" context="administration">
 <fr><![CDATA[février]]></fr>
         </locale>
-        <locale name="controls.crontime.month.3">
+        <locale name="controls.crontime.month.3" context="administration">
 <fr><![CDATA[mars]]></fr>
         </locale>
-        <locale name="controls.crontime.month.4">
+        <locale name="controls.crontime.month.4" context="administration">
 <fr><![CDATA[avril]]></fr>
         </locale>
-        <locale name="controls.crontime.month.5">
+        <locale name="controls.crontime.month.5" context="administration">
 <fr><![CDATA[mai]]></fr>
         </locale>
-        <locale name="controls.crontime.month.6">
+        <locale name="controls.crontime.month.6" context="administration">
 <fr><![CDATA[juin]]></fr>
         </locale>
-        <locale name="controls.crontime.month.7">
+        <locale name="controls.crontime.month.7" context="administration">
 <fr><![CDATA[juillet]]></fr>
         </locale>
-        <locale name="controls.crontime.month.8">
+        <locale name="controls.crontime.month.8" context="administration">
 <fr><![CDATA[août]]></fr>
         </locale>
-        <locale name="controls.crontime.month.9">
+        <locale name="controls.crontime.month.9" context="administration">
 <fr><![CDATA[septembre]]></fr>
         </locale>
-        <locale name="controls.crontime.month.10">
+        <locale name="controls.crontime.month.10" context="administration">
 <fr><![CDATA[octobre]]></fr>
         </locale>
-        <locale name="controls.crontime.month.11">
+        <locale name="controls.crontime.month.11" context="administration">
 <fr><![CDATA[novembre]]></fr>
         </locale>
-        <locale name="controls.crontime.month.12">
+        <locale name="controls.crontime.month.12" context="administration">
 <fr><![CDATA[décembre]]></fr>
         </locale>
-        <locale name="controls.crontime.label.minute">
+        <locale name="controls.crontime.label.minute" context="administration">
 <fr><![CDATA[Minute]]></fr>
         </locale>
-        <locale name="controls.crontime.label.hour">
+        <locale name="controls.crontime.label.hour" context="administration">
 <fr><![CDATA[Heure]]></fr>
         </locale>
-        <locale name="controls.crontime.label.day">
+        <locale name="controls.crontime.label.day" context="administration">
 <fr><![CDATA[Jour]]></fr>
         </locale>
-        <locale name="controls.crontime.label.month">
+        <locale name="controls.crontime.label.month" context="administration">
 <fr><![CDATA[Mois]]></fr>
         </locale>
-        <locale name="controls.crontime.label.dayofweek">
+        <locale name="controls.crontime.label.dayofweek" context="administration">
 <fr><![CDATA[Jour de la semaine]]></fr>
         </locale>
-        <locale name="controls.crontime.label.at">
+        <locale name="controls.crontime.label.at" context="administration">
 <fr><![CDATA[À]]></fr>
-        </locale>
-        <locale name="controls.crontime.label.on">
-<fr><![CDATA[Le]]></fr>
-        </locale>
-        <locale name="controls.crontime.label.interval">
-<fr><![CDATA[Intervalle]]></fr>
         </locale>
 
 <!-- Cronservice -->
-        <locale name="cron.panel.manager.btn.cronservice.register">
+        <locale name="cron.panel.manager.btn.cronservice.register" context="administration">
 <fr><![CDATA[Service cron]]></fr>
         </locale>
 
-        <locale name="cron.window.cronservice.title">
+        <locale name="cron.window.cronservice.title" context="administration">
 <fr><![CDATA[Service cron]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.btn.cancel">
-<fr><![CDATA[Annuler]]></fr>
-        </locale>
-        <locale name="cron.window.cronservice.btn.register">
-<fr><![CDATA[S’inscrire]]></fr>
-        </locale>
-        <locale name="cron.window.cronservice.content.title">
+        <locale name="cron.window.cronservice.content.title" context="administration">
 <fr><![CDATA[Service cron]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.content.about.title">
+        <locale name="cron.window.cronservice.content.about.title" context="administration">
 <fr><![CDATA[À propos du service]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.content.about.text">
+        <locale name="cron.window.cronservice.content.about.text" context="administration">
 <fr><![CDATA[Le service cron de QUIQQER permet d’exécuter des tâches cron sur les systèmes qui ne disposent pas de cette fonction nativement. Il utilise un serveur externe auprès duquel les systèmes QUIQQER peuvent s’inscrire. Ce serveur lance régulièrement les tâches cron des systèmes inscrits. Ce service est particulièrement utile en hébergement mutualisé.]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.content.status.title">
+        <locale name="cron.window.cronservice.content.status.title" context="administration">
 <fr><![CDATA[Statut]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.content.status.text">
+        <locale name="cron.window.cronservice.content.status.text" context="administration">
 <fr><![CDATA[Vous pouvez consulter ici le statut de votre inscription :]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.content.btn.register">
+        <locale name="cron.window.cronservice.content.btn.register" context="administration">
 <fr><![CDATA[S’inscrire]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.content.register.title">
-<fr><![CDATA[S’inscrire]]></fr>
-        </locale>
-        <locale name="cron.window.cronservice.content.register.placeholder.email">
+        <locale name="cron.window.cronservice.content.register.placeholder.email" context="administration">
 <fr><![CDATA[E-mail]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.registration.title">
+        <locale name="cron.window.cronservice.registration.title" context="administration">
 <fr><![CDATA[Inscription]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.content.register.txt.email.title">
+        <locale name="cron.window.cronservice.content.register.txt.email.title" context="administration">
 <fr><![CDATA[E-mail]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.content.register.btn.register">
-<fr><![CDATA[S’inscrire]]></fr>
-        </locale>
-        <locale name="cron.window.cronservice.content.register.btn.unregister">
+        <locale name="cron.window.cronservice.content.register.btn.unregister" context="administration">
 <fr><![CDATA[Se désinscrire]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.status.text.inactive">
+        <locale name="cron.window.cronservice.status.text.inactive" context="administration">
 <fr><![CDATA[Inactif]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.status.text.registered">
+        <locale name="cron.window.cronservice.status.text.registered" context="administration">
 <fr><![CDATA[Actif]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.status.text.unregistered">
+        <locale name="cron.window.cronservice.status.text.unregistered" context="administration">
 <fr><![CDATA[Non inscrit]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.content.register.lbl.stats.status">
+        <locale name="cron.window.cronservice.content.register.lbl.stats.status" context="administration">
 <fr><![CDATA[Statut : ]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.content.register.lbl.stats.email">
+        <locale name="cron.window.cronservice.content.register.lbl.stats.email" context="administration">
 <fr><![CDATA[E-mail : ]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.content.register.lbl.stats.errors">
+        <locale name="cron.window.cronservice.content.register.lbl.stats.errors" context="administration">
 <fr><![CDATA[Nombre d’erreurs : ]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.content.register.lbl.stats.lastExecution">
+        <locale name="cron.window.cronservice.content.register.lbl.stats.lastExecution" context="administration">
 <fr><![CDATA[Dernier appel : ]]></fr>
         </locale>
 
-        <locale name="cron.window.cronservice.content.register.lbl.stats.lastLocalExecution">
+        <locale name="cron.window.cronservice.content.register.lbl.stats.lastLocalExecution" context="administration">
 <fr><![CDATA[Dernière exécution de cron : ]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.content.btn.unregister.confirm">
+        <locale name="cron.window.cronservice.content.btn.unregister.confirm" context="administration">
 <fr><![CDATA[Voulez-vous vraiment continuer ?]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.content.btn.unregister">
+        <locale name="cron.window.cronservice.content.btn.unregister" context="administration">
 <fr><![CDATA[Supprimer l’inscription]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.registration.success.title">
+        <locale name="cron.window.cronservice.registration.success.title" context="administration">
 <fr><![CDATA[Inscription réussie]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.registration.success.text" html="true">
+        <locale name="cron.window.cronservice.registration.success.text" context="administration" html="true">
 <fr><![CDATA[L’inscription a réussi. Consultez la boîte de réception de l’adresse e-mail indiquée et confirmez votre inscription.<br />Pensez à vérifier le dossier des courriers indésirables.]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.content.btn.resend.activation.mail">
+        <locale name="cron.window.cronservice.content.btn.resend.activation.mail" context="administration">
 <fr><![CDATA[Renvoyer l’e-mail d’activation]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.registration.success.btn.confirm.text">
+        <locale name="cron.window.cronservice.registration.success.btn.confirm.text" context="administration">
 <fr><![CDATA[Compris]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.registration.button.text.cancel">
+        <locale name="cron.window.cronservice.registration.button.text.cancel" context="administration">
 <fr><![CDATA[Annuler l’inscription]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.content.status.unavailable">
+        <locale name="cron.window.cronservice.content.status.unavailable" context="administration">
 <fr><![CDATA[Le service Cron de QUIQQER est actuellement indisponible. Veuillez réessayer plus tard ou contacter support@pcsg.de]]></fr>
         </locale>
-        <locale name="cron.window.cronservice.content.button.message.sent.success">
+        <locale name="cron.window.cronservice.content.button.message.sent.success" context="administration">
 <fr><![CDATA[Message envoyé.]]></fr>
         </locale>
 
-        <locale name="last.exec.time">
+        <locale name="last.exec.time" context="administration">
 <fr><![CDATA[Dernière exécution]]></fr>
         </locale>
 
-        <locale name="controls.Params.add">
+        <locale name="controls.Params.add" context="administration">
 <fr><![CDATA[Ajouter un paramètre]]></fr>
         </locale>
-        <locale name="controls.Params.add.title">
+        <locale name="controls.Params.add.title" context="administration">
 <fr><![CDATA[Ajouter un paramètre]]></fr>
         </locale>
-        <locale name="controls.Params.add.text">
+        <locale name="controls.Params.add.text" context="administration">
 <fr><![CDATA[Définissez le nom et la valeur du paramètre.]]></fr>
         </locale>
 
-        <locale name="message.updates.available">
+        <locale name="message.updates.available" context="administration">
 <fr><![CDATA[<h1>Mises à jour disponibles</h1><p>Des mises à jour sont disponibles pour votre système QUIQQER. Veuillez mettre à jour votre système.</p>]]></fr>
         </locale>
-        <locale name="message.updates.available.button">
+        <locale name="message.updates.available.button" context="administration">
 <fr><![CDATA[Accéder à la mise à jour]]></fr>
         </locale>
-        <locale name="message.updates.available.cancel.button">
+        <locale name="message.updates.available.cancel.button" context="administration">
 <fr><![CDATA[Pas maintenant]]></fr>
         </locale>
-        <locale name="message.admin.cron.execution">
+        <locale name="message.admin.cron.execution" context="administration">
 <fr><![CDATA[Une tâche système planifiée (tâche cron) est en cours d’exécution. D’autres actions, comme les requêtes ou le chargement de fichiers, peuvent donc être légèrement ralenties. Veuillez patienter. Merci de votre compréhension.]]></fr>
         </locale>
     </groups>
