@@ -35,21 +35,6 @@
         <locale name="exception.cron.system.change">
             <de><![CDATA[Die Aufgabe eines System-Crons kann nicht geändert werden.]]></de>
         </locale>
-        <locale name="controls.crontime.label.interval">
-<de><![CDATA[Intervall]]></de>
-        </locale>
-        <locale name="cron.window.cronservice.btn.cancel">
-<de><![CDATA[Abbrechen]]></de>
-        </locale>
-        <locale name="cron.window.cronservice.btn.register">
-<de><![CDATA[Registrieren]]></de>
-        </locale>
-        <locale name="cron.window.cronservice.content.register.title">
-<de><![CDATA[Registrieren]]></de>
-        </locale>
-        <locale name="cron.window.cronservice.content.register.btn.register">
-<de><![CDATA[Registrieren]]></de>
-        </locale>
 
         <locale name="message.ajax.cronservice.general_error">
 <de><![CDATA[Das hat leider nicht geklappt. Bitte probiere es erneut oder kontaktiere support@pcsg.de!]]></de>
@@ -129,9 +114,6 @@
 <!-- region Cleanup-Crons -->
         <locale name="cron.cleanupUploads.title">
 <de><![CDATA[Upload-Ordner bereinigen]]></de>
-        </locale>
-        <locale name="cron.cron.cleanupUploads.description">
-<de><![CDATA[Entfernt Dateien aus dem Upload-Ordner, die älter als einen Tag sind.]]></de>
         </locale>
 
 <!-- region Cleanup Temp-Folder -->
@@ -293,9 +275,6 @@
         </locale>
         <locale name="cron.updateExecute.title">
 <de><![CDATA[Automatisches Update]]></de>
-        </locale>
-        <locale name="cron.updateExecute..description">
-<de><![CDATA[Führt Updates für QUIQQER aus, wenn welche verfügbar sind.]]></de>
         </locale>
 
         <locale name="update.mail.error.subject">
@@ -604,9 +583,6 @@
         </locale>
         <locale name="controls.crontime.label.at" context="administration">
 <de><![CDATA[Um]]></de>
-        </locale>
-        <locale name="controls.crontime.label.on" context="administration">
-<de><![CDATA[Am]]></de>
         </locale>
 
 <!-- Cronservice -->

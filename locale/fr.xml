@@ -30,21 +30,6 @@
         <locale name="exception.cron.system.change">
             <fr><![CDATA[La tâche d’un cron système ne peut pas être modifiée.]]></fr>
         </locale>
-        <locale name="controls.crontime.label.interval">
-<fr><![CDATA[Intervalle]]></fr>
-        </locale>
-        <locale name="cron.window.cronservice.btn.cancel">
-<fr><![CDATA[Annuler]]></fr>
-        </locale>
-        <locale name="cron.window.cronservice.btn.register">
-<fr><![CDATA[S’inscrire]]></fr>
-        </locale>
-        <locale name="cron.window.cronservice.content.register.title">
-<fr><![CDATA[S’inscrire]]></fr>
-        </locale>
-        <locale name="cron.window.cronservice.content.register.btn.register">
-<fr><![CDATA[S’inscrire]]></fr>
-        </locale>
 
         <locale name="message.ajax.cronservice.general_error">
 <fr><![CDATA[L’opération a échoué. Veuillez réessayer ou contacter support@pcsg.de.]]></fr>
@@ -121,9 +106,6 @@
 <!-- region Cleanup-Crons -->
         <locale name="cron.cleanupUploads.title">
 <fr><![CDATA[Nettoyer le dossier des téléversements]]></fr>
-        </locale>
-        <locale name="cron.cron.cleanupUploads.description">
-<fr><![CDATA[Supprime du dossier des téléversements les fichiers datant de plus d’un jour.]]></fr>
         </locale>
 
 <!-- region Cleanup Temp-Folder -->
@@ -277,9 +259,6 @@
         </locale>
         <locale name="cron.updateExecute.title">
 <fr><![CDATA[Mise à jour automatique]]></fr>
-        </locale>
-        <locale name="cron.updateExecute..description">
-<fr><![CDATA[Effectue les mises à jour de QUIQQER lorsqu’elles sont disponibles.]]></fr>
         </locale>
 
         <locale name="update.mail.error.subject">
@@ -562,9 +541,6 @@
         </locale>
         <locale name="controls.crontime.label.at" context="administration">
 <fr><![CDATA[À]]></fr>
-        </locale>
-        <locale name="controls.crontime.label.on" context="administration">
-<fr><![CDATA[Le]]></fr>
         </locale>
 
 <!-- Cronservice -->

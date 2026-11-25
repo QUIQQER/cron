@@ -30,21 +30,6 @@
         <locale name="exception.cron.system.change">
             <es><![CDATA[No se puede cambiar la tarea de un cron del sistema.]]></es>
         </locale>
-        <locale name="controls.crontime.label.interval">
-<es><![CDATA[Intervalo]]></es>
-        </locale>
-        <locale name="cron.window.cronservice.btn.cancel">
-<es><![CDATA[Cancelar]]></es>
-        </locale>
-        <locale name="cron.window.cronservice.btn.register">
-<es><![CDATA[Registrarse]]></es>
-        </locale>
-        <locale name="cron.window.cronservice.content.register.title">
-<es><![CDATA[Registrarse]]></es>
-        </locale>
-        <locale name="cron.window.cronservice.content.register.btn.register">
-<es><![CDATA[Registrarse]]></es>
-        </locale>
 
         <locale name="message.ajax.cronservice.general_error">
 <es><![CDATA[La operación no se ha podido completar. Inténtalo de nuevo o contacta con support@pcsg.de.]]></es>
@@ -121,9 +106,6 @@
 <!-- region Cleanup-Crons -->
         <locale name="cron.cleanupUploads.title">
 <es><![CDATA[Limpiar la carpeta de cargas]]></es>
-        </locale>
-        <locale name="cron.cron.cleanupUploads.description">
-<es><![CDATA[Elimina de la carpeta de cargas los archivos con más de un día de antigüedad.]]></es>
         </locale>
 
 <!-- region Cleanup Temp-Folder -->
@@ -277,9 +259,6 @@
         </locale>
         <locale name="cron.updateExecute.title">
 <es><![CDATA[Actualización automática]]></es>
-        </locale>
-        <locale name="cron.updateExecute..description">
-<es><![CDATA[Instala las actualizaciones de QUIQQER que estén disponibles.]]></es>
         </locale>
 
         <locale name="update.mail.error.subject">
@@ -562,9 +541,6 @@
         </locale>
         <locale name="controls.crontime.label.at" context="administration">
 <es><![CDATA[Hora:]]></es>
-        </locale>
-        <locale name="controls.crontime.label.on" context="administration">
-<es><![CDATA[Día:]]></es>
         </locale>
 
 <!-- Cronservice -->
